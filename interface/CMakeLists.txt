@@ -206,8 +206,8 @@ endif()
 
 # link required hifi libraries
 link_hifi_libraries(
-  shared workload task octree ktx gpu gl procedural graphics graphics-scripting render
-  pointers
+  shared workload task octree ktx gpu gl procedural
+  graphics graphics-scripting render pointers
   recording fbx networking model-networking entities avatars trackers
   audio audio-client animation script-engine physics
   render-utils entities-renderer avatars-renderer ui qml auto-updater midi

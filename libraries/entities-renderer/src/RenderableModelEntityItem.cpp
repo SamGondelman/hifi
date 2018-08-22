@@ -975,7 +975,7 @@ scriptable::ScriptableModelBase render::entities::ModelEntityRenderer::getScript
     result.objectID = getEntity()->getID();
     {
         std::lock_guard<std::mutex> lock(_materialsLock);
-        result.appendMaterials(_materials);
+        result.appendMaterials(graphics::MultiMaterial::convertToMaterialLayerData(_materials));
     }
     return result;
 }

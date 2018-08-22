@@ -1,6 +1,6 @@
 set(TARGET_NAME procedural)
 setup_hifi_library()
-link_hifi_libraries(shared gpu shaders networking graphics model-networking render-utils)
+link_hifi_libraries(shared gpu shaders networking graphics graphics-scripting model-networking render-utils)
 include_hifi_library_headers(fbx)
 include_hifi_library_headers(ktx)
 include_hifi_library_headers(image)

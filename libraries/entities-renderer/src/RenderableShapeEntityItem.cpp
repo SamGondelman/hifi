@@ -28,7 +28,10 @@ using namespace render::entities;
 // is a half unit sphere.  However, the geometry cache renders a UNIT sphere, so we need to scale down.
 static const float SPHERE_ENTITY_SCALE = 0.5f;
 
-ShapeEntityRenderer::ShapeEntityRenderer(const EntityItemPointer& entity) : Parent(entity) {}
+ShapeEntityRenderer::ShapeEntityRenderer(const EntityItemPointer& entity) : Parent(entity) {
+    _material = std::make_shared<graphics::ProceduralMaterial>();
+    addMaterial(graphics::MaterialLayer(_material, 0), "0");
+}
 
 bool ShapeEntityRenderer::needsRenderUpdate() const {
     auto mat = _materials.find("0");
@@ -40,7 +43,17 @@ bool ShapeEntityRenderer::needsRenderUpdate() const {
 }
 
 bool ShapeEntityRenderer::needsRenderUpdateFromTypedEntity(const TypedEntityPointer& entity) const {
-    if (_material != entity->getMaterial()) {
+    xColor xColor = entity->getXColor();
+    glm::vec3 color = glm::vec3(xColor.red, xColor.green, xColor.blue) / 255.0f;
+    if (_color != color) {
+        return true;
+    }
+
+    if (_alpha != entity->getAlpha()) {
+        return true;
+    }
+
+    if (_proceduralData != entity->getProceduralData()) {
         return true;
     }
 
@@ -57,10 +70,20 @@ bool ShapeEntityRenderer::needsRenderUpdateFromTypedEntity(const TypedEntityPoin
 
 void ShapeEntityRenderer::doRenderUpdateSynchronousTyped(const ScenePointer& scene, Transaction& transaction, const TypedEntityPointer& entity) {
     withWriteLock([&] {
-        if (_material != entity->getMaterial()) {
-            removeMaterial(_material, "0");
-            _material = entity->getMaterial();
-            addMaterial(graphics::MaterialLayer(_material, 0), "0");
+        xColor xColor = entity->getXColor();
+        glm::vec3 color = glm::vec3(xColor.red, xColor.green, xColor.blue) / 255.0f;
+        if (_color != color) {
+            _material->setAlbedo(color);
+            _color = color;
+        }
+
+        if (_alpha != entity->getAlpha()) {
+            _material->setOpacity(entity->getAlpha());
+            _alpha = entity->getAlpha();
+        }
+
+        if (_proceduralData != entity->getProceduralData()) {
+            _material->editProcedural().setProceduralData(ProceduralData::parse(_proceduralData));
         }
 
         _shape = entity->getShape();
@@ -250,7 +273,7 @@ scriptable::ScriptableModelBase ShapeEntityRenderer::getScriptableModel()  {
     glm::vec3 vertexColor;
     {
         std::lock_guard<std::mutex> lock(_materialsLock);
-        result.appendMaterials(_materials);
+        result.appendMaterials(graphics::MultiMaterial::convertToMaterialLayerData(_materials));
         if (_materials["0"].top().material) {
             vertexColor = _materials["0"].top().material->getAlbedo();
         }

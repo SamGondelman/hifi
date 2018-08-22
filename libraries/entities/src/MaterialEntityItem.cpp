@@ -16,19 +16,12 @@
 EntityItemPointer MaterialEntityItem::factory(const EntityItemID& entityID, const EntityItemProperties& properties) {
     Pointer entity(new MaterialEntityItem(entityID), [](EntityItem* ptr) { ptr->deleteLater(); });
     entity->setProperties(properties);
-    // When you reload content, setProperties doesn't have any of the propertiesChanged flags set, so it won't trigger a material add
-    entity->removeMaterial();
-    entity->applyMaterial();
     return entity;
 }
 
 // our non-pure virtual subclass for now...
 MaterialEntityItem::MaterialEntityItem(const EntityItemID& entityItemID) : EntityItem(entityItemID) {
     _type = EntityTypes::Material;
-}
-
-MaterialEntityItem::~MaterialEntityItem() {
-    removeMaterial();
 }
 
 EntityItemProperties MaterialEntityItem::getProperties(EntityPropertyFlags desiredProperties) const {
@@ -126,7 +119,6 @@ void MaterialEntityItem::debugDump() const {
     qCDebug(entities) << " MATERIAL EntityItem id:" << getEntityItemID() << "---------------------------------------------";
     qCDebug(entities) << "                   name:" << _name;
     qCDebug(entities) << "           material url:" << _materialURL;
-    qCDebug(entities) << "  current material name:" << _currentMaterialName.c_str();
     qCDebug(entities) << "  material mapping mode:" << _materialMappingMode;
     qCDebug(entities) << "               priority:" << _priority;
     qCDebug(entities) << "   parent material name:" << _parentMaterialName;
@@ -143,186 +135,44 @@ void MaterialEntityItem::setUnscaledDimensions(const glm::vec3& value) {
     EntityItem::setUnscaledDimensions(ENTITY_ITEM_DEFAULT_DIMENSIONS);
 }
 
-graphics::ProceduralMaterialPointer MaterialEntityItem::getMaterial() const {
-    auto material = _parsedMaterials.networkMaterials.find(_currentMaterialName);
-    if (material != _parsedMaterials.networkMaterials.end()) {
-        return material->second;
-    } else {
-        return nullptr;
-    }
-}
-
-void MaterialEntityItem::setMaterialURL(const QString& materialURLString, bool materialDataChanged) {
-    bool usingMaterialData = materialDataChanged || materialURLString.startsWith("materialData");
-    if (_materialURL != materialURLString || (usingMaterialData && materialDataChanged)) {
-        removeMaterial();
-        _materialURL = materialURLString;
-
-        if (materialURLString.contains("?")) {
-            auto split = materialURLString.split("?");
-            _currentMaterialName = split.last().toStdString();
-        }
-
-        if (usingMaterialData) {
-            _parsedMaterials = ProceduralMaterialResource::parseJSONMaterials(QJsonDocument::fromJson(getMaterialData().toUtf8()), materialURLString);
-
-            // Since our material changed, the current name might not be valid anymore, so we need to update
-            setCurrentMaterialName(_currentMaterialName);
-            applyMaterial();
-        } else {
-            _networkMaterial = MaterialCache::instance().getMaterial(materialURLString);
-            auto onMaterialRequestFinished = [&](bool success) {
-                if (success) {
-                    _parsedMaterials = _networkMaterial->parsedMaterials;
-
-                    setCurrentMaterialName(_currentMaterialName);
-                    applyMaterial();
-                }
-            };
-            if (_networkMaterial) {
-                if (_networkMaterial->isLoaded()) {
-                    onMaterialRequestFinished(!_networkMaterial->isFailed());
-                } else {
-                    connect(_networkMaterial.data(), &Resource::finished, this, onMaterialRequestFinished);
-                }
-            }
-        }
-    }
-}
-
-void MaterialEntityItem::setCurrentMaterialName(const std::string& currentMaterialName) {
-    if (_parsedMaterials.networkMaterials.find(currentMaterialName) != _parsedMaterials.networkMaterials.end()) {
-        _currentMaterialName = currentMaterialName;
-    } else if (_parsedMaterials.names.size() > 0) {
-        _currentMaterialName = _parsedMaterials.names[0];
+void MaterialEntityItem::setMaterialURL(const QString& materialURL) {
+    if (_materialURL != materialURL) {
+        _materialURL = materialURL;
     }
 }
 
 void MaterialEntityItem::setMaterialData(const QString& materialData) {
     if (_materialData != materialData) {
         _materialData = materialData;
-        if (_materialURL.startsWith("materialData")) {
-            // Trigger material update when material data changes
-            setMaterialURL(_materialURL, true);
-        }
     }
 }
 
 void MaterialEntityItem::setMaterialMappingPos(const glm::vec2& materialMappingPos) {
     if (_materialMappingPos != materialMappingPos) {
-        removeMaterial();
         _materialMappingPos = materialMappingPos;
-        applyMaterial();
     }
 }
 
 void MaterialEntityItem::setMaterialMappingScale(const glm::vec2& materialMappingScale) {
     if (_materialMappingScale != materialMappingScale) {
-        removeMaterial();
         _materialMappingScale = materialMappingScale;
-        applyMaterial();
     }
 }
 
 void MaterialEntityItem::setMaterialMappingRot(const float& materialMappingRot) {
     if (_materialMappingRot != materialMappingRot) {
-        removeMaterial();
         _materialMappingRot = materialMappingRot;
-        applyMaterial();
     }
 }
 
 void MaterialEntityItem::setPriority(quint16 priority) {
     if (_priority != priority) {
-        removeMaterial();
         _priority = priority;
-        applyMaterial();
     }
 }
 
 void MaterialEntityItem::setParentMaterialName(const QString& parentMaterialName) {
     if (_parentMaterialName != parentMaterialName) {
-        removeMaterial();
         _parentMaterialName = parentMaterialName;
-        applyMaterial();
     }
-}
-
-void MaterialEntityItem::setParentID(const QUuid& parentID) {
-    if (getParentID() != parentID) {
-        removeMaterial();
-        EntityItem::setParentID(parentID);
-        applyMaterial();
-    }
-}
-
-void MaterialEntityItem::removeMaterial() {
-    graphics::ProceduralMaterialPointer material = getMaterial();
-    if (!material) {
-        return;
-    }
-    QUuid parentID = getParentID();
-    if (parentID.isNull()) {
-        return;
-    }
-
-    // Our parent could be an entity, an avatar, or an overlay
-    if (EntityTree::removeMaterialFromEntity(parentID, material, getParentMaterialName().toStdString())) {
-        return;
-    }
-
-    if (EntityTree::removeMaterialFromAvatar(parentID, material, getParentMaterialName().toStdString())) {
-        return;
-    }
-
-    if (EntityTree::removeMaterialFromOverlay(parentID, material, getParentMaterialName().toStdString())) {
-        return;
-    }
-
-    // if a remove fails, our parent is gone, so we don't need to retry
-}
-
-void MaterialEntityItem::applyMaterial() {
-    _retryApply = false;
-    graphics::ProceduralMaterialPointer material = getMaterial();
-    QUuid parentID = getParentID();
-    if (!material || parentID.isNull()) {
-        return;
-    }
-    Transform textureTransform;
-    textureTransform.setTranslation(glm::vec3(_materialMappingPos, 0));
-    textureTransform.setRotation(glm::vec3(0, 0, glm::radians(_materialMappingRot)));
-    textureTransform.setScale(glm::vec3(_materialMappingScale, 1));
-    material->setTextureTransforms(textureTransform);
-
-    graphics::MaterialLayer materialLayer = graphics::MaterialLayer(material, getPriority());
-
-    // Our parent could be an entity, an avatar, or an overlay
-    if (EntityTree::addMaterialToEntity(parentID, materialLayer, getParentMaterialName().toStdString())) {
-        return;
-    }
-
-    if (EntityTree::addMaterialToAvatar(parentID, materialLayer, getParentMaterialName().toStdString())) {
-        return;
-    }
-
-    if (EntityTree::addMaterialToOverlay(parentID, materialLayer, getParentMaterialName().toStdString())) {
-        return;
-    }
-
-    // if we've reached this point, we couldn't find our parent, so we need to try again later
-    _retryApply = true;
-}
-
-void MaterialEntityItem::postParentFixup() {
-    removeMaterial();
-    applyMaterial();
-}
-
-void MaterialEntityItem::update(const quint64& now) {
-    if (_retryApply) {
-        applyMaterial();
-    }
-
-    EntityItem::update(now);
 }

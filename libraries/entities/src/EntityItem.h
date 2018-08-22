@@ -36,8 +36,6 @@
 #include "SimulationFlags.h"
 #include "EntityDynamicInterface.h"
 
-#include "procedural/ProceduralMaterial.h"
-
 class EntitySimulation;
 class EntityTreeElement;
 class EntityTreeElementExtraEncodeData;
@@ -516,10 +514,6 @@ public:
     virtual void preDelete();
     virtual void postParentFixup() {}
 
-    void addMaterial(graphics::MaterialLayer material, const std::string& parentMaterialName);
-    void removeMaterial(graphics::ProceduralMaterialPointer material, const std::string& parentMaterialName);
-    std::unordered_map<std::string, graphics::MultiMaterial> getMaterials();
-
     void setSimulationOwnershipExpiry(uint64_t expiry) { _simulationOwnershipExpiry = expiry; }
     uint64_t getSimulationOwnershipExpiry() const { return _simulationOwnershipExpiry; }
 
@@ -702,10 +696,6 @@ protected:
     bool _cloneAvatarEntity { ENTITY_ITEM_DEFAULT_CLONE_AVATAR_ENTITY };
     QUuid _cloneOriginID;
     QVector<QUuid> _cloneIDs;
-
-private:
-    std::unordered_map<std::string, graphics::MultiMaterial> _materials;
-    std::mutex _materialsLock;
 
 };
 

@@ -743,7 +743,7 @@ scriptable::ScriptableModelBase Model::getScriptableModel() {
 
             int numParts = (int)mesh->getNumParts();
             for (int partIndex = 0; partIndex < numParts; partIndex++) {
-                result.appendMaterial(graphics::MaterialLayer(std::make_shared<graphics::ProceduralMaterial>(*getGeometry()->getShapeMaterial(shapeID)), 0), shapeID, _modelMeshMaterialNames[shapeID]);
+                result.appendMaterial({ getGeometry()->getShapeMaterial(shapeID), "", 0 }, shapeID, _modelMeshMaterialNames[shapeID]);
                 shapeID++;
             }
         }

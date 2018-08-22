@@ -32,6 +32,7 @@
 #include <SpatiallyNestable.h>
 #include <TriangleSet.h>
 #include <DualQuaternion.h>
+#include <procedural/ProceduralMaterial.h>
 
 #include "RenderHifi.h"
 #include "GeometryCache.h"

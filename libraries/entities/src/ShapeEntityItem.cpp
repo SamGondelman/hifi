@@ -19,8 +19,6 @@
 #include "EntityTree.h"
 #include "EntityTreeElement.h"
 
-#include <procedural/Procedural.h>
-
 namespace entity {
 
     /**jsdoc
@@ -114,7 +112,6 @@ EntityItemPointer ShapeEntityItem::sphereFactory(const EntityItemID& entityID, c
 ShapeEntityItem::ShapeEntityItem(const EntityItemID& entityItemID) : EntityItem(entityItemID) {
     _type = EntityTypes::Shape;
     _volumeMultiplier *= PI / 6.0f;
-    _material = std::make_shared<graphics::ProceduralMaterial>();
 }
 
 EntityItemProperties ShapeEntityItem::getProperties(EntityPropertyFlags desiredProperties) const {
@@ -219,7 +216,6 @@ void ShapeEntityItem::appendSubclassData(OctreePacketData* packetData, EncodeBit
 
 void ShapeEntityItem::setColor(const rgbColor& value) {
     memcpy(_color, value, sizeof(rgbColor));
-    _material->setAlbedo(glm::vec3(_color[0], _color[1], _color[2]) / 255.0f);
 }
 
 xColor ShapeEntityItem::getXColor() const {
@@ -242,12 +238,10 @@ void ShapeEntityItem::setColor(const QColor& value) {
 
 void ShapeEntityItem::setAlpha(float alpha) {
     _alpha = alpha;
-    _material->setOpacity(alpha);
 }
 
 void ShapeEntityItem::setProceduralData(const QString& proceduralData) {
     if (getProceduralData() != proceduralData) {
-        _material->editProcedural().setProceduralData(ProceduralData::parse(proceduralData));
         _proceduralData = proceduralData;
     }
 }

@@ -11,8 +11,6 @@
 
 #include "EntityItem.h"
 
-#include <procedural/ProceduralMaterial.h>
-
 namespace entity {
     enum Shape {
         Triangle,
@@ -110,8 +108,6 @@ public:
     void setProceduralData(const QString& proceduralData);
     QString getProceduralData() const { return _proceduralData; }
 
-    graphics::ProceduralMaterialPointer getMaterial() { return _material; }
-
 protected:
 
     float _alpha { 1.0f };
@@ -123,8 +119,6 @@ protected:
     //! prior functionality where new or unsupported shapes are treated as
     //! ellipsoids.
     ShapeType _collisionShapeType{ ShapeType::SHAPE_TYPE_ELLIPSOID };
-
-    graphics::ProceduralMaterialPointer _material;
 };
 
 #endif // hifi_ShapeEntityItem_h

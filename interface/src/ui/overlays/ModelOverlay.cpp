@@ -755,7 +755,7 @@ scriptable::ScriptableModelBase ModelOverlay::getScriptableModel() {
     result.objectID = getID();
     {
         std::lock_guard<std::mutex> lock(_materialsLock);
-        result.appendMaterials(_materials);
+        result.appendMaterials(graphics::MultiMaterial::convertToMaterialLayerData(_materials));
     }
     return result;
 }

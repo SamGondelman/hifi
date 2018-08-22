@@ -10,6 +10,7 @@
 #define hifi_ProceduralMaterial_h
 
 #include <model-networking/ModelCache.h>
+#include <graphics-scripting/Forward.h>
 #include "Procedural.h"
 
 namespace graphics {
@@ -68,6 +69,23 @@ public:
             return false;
         }
     }
+
+    static std::unordered_map<std::string, std::vector<scriptable::MaterialLayerData>> convertToMaterialLayerData(
+        const std::unordered_map<std::string, graphics::MultiMaterial>& materials) {
+        std::unordered_map<std::string, std::vector<scriptable::MaterialLayerData>> toReturn;
+        for (auto& material : materials) {
+            std::vector<scriptable::MaterialLayerData> layers;
+            auto multiMaterialCopy = material.second;
+            while (!multiMaterialCopy.empty()) {
+                auto& topMaterial = multiMaterialCopy.top();
+                layers.emplace_back(topMaterial.material, topMaterial.material->getProceduralString(), topMaterial.priority);
+                multiMaterialCopy.pop();
+            }
+            toReturn[material.first.c_str()] = layers;
+        }
+        return toReturn;
+    }
+
 };
 
 };  // namespace graphics

@@ -14,7 +14,6 @@
 
 #include "GraphicsScriptingUtil.h"
 #include "ScriptableMesh.h"
-#include "procedural/ProceduralMaterial.h"
 #include "image/Image.h"
 
 // #define SCRIPTABLE_MESH_DEBUG 1
@@ -46,7 +45,7 @@ scriptable::ScriptableMaterial& scriptable::ScriptableMaterial::operator=(const 
     return *this;
 }
 
-scriptable::ScriptableMaterial::ScriptableMaterial(const graphics::ProceduralMaterialPointer& material) :
+scriptable::ScriptableMaterial::ScriptableMaterial(const graphics::MaterialPointer& material, const QString& proceduralString) :
     name(material->getName().c_str()),
     model(material->getModel().c_str()),
     opacity(material->getOpacity()),
@@ -56,7 +55,7 @@ scriptable::ScriptableMaterial::ScriptableMaterial(const graphics::ProceduralMat
     unlit(material->isUnlit()),
     emissive(material->getEmissive()),
     albedo(material->getAlbedo()),
-    procedural(material->getProceduralString())
+    procedural(proceduralString)
 {
     auto map = material->getTextureMap(graphics::Material::MapChannel::EMISSIVE_MAP);
     if (map && map->getTextureSource()) {
@@ -156,17 +155,16 @@ void scriptable::ScriptableModelBase::append(const ScriptableMeshBase& mesh) {
     meshes << mesh;
 }
 
-void scriptable::ScriptableModelBase::appendMaterial(const graphics::MaterialLayer& materialLayer, int shapeID, std::string materialName) {
+void scriptable::ScriptableModelBase::appendMaterial(const MaterialLayerData& materialLayer, int shapeID, const std::string& materialName) {
     materialLayers[QString::number(shapeID)].push_back(ScriptableMaterialLayer(materialLayer));
     materialLayers["mat::" + QString::fromStdString(materialName)].push_back(ScriptableMaterialLayer(materialLayer));
 }
 
-void scriptable::ScriptableModelBase::appendMaterials(const std::unordered_map<std::string, graphics::MultiMaterial>& materialsToAppend) {
+void scriptable::ScriptableModelBase::appendMaterials(const std::unordered_map<std::string, std::vector<MaterialLayerData>>& materialsToAppend) {
     auto materialsToAppendCopy = materialsToAppend;
     for (auto& multiMaterial : materialsToAppendCopy) {
-        while (!multiMaterial.second.empty()) {
-            materialLayers[QString(multiMaterial.first.c_str())].push_back(ScriptableMaterialLayer(multiMaterial.second.top()));
-            multiMaterial.second.pop();
+        for (auto& materialLayer : multiMaterial.second) {
+            materialLayers[QString(multiMaterial.first.c_str())].push_back(ScriptableMaterialLayer(materialLayer));
         }
     }
 }

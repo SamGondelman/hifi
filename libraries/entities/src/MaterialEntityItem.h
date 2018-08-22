@@ -12,8 +12,6 @@
 #include "EntityItem.h"
 
 #include "MaterialMappingMode.h"
-#include <procedural/ProceduralMaterial.h>
-#include <procedural/ProceduralMaterialCache.h>
 
 class MaterialEntityItem : public EntityItem {
     using Pointer = std::shared_ptr<MaterialEntityItem>;
@@ -21,12 +19,8 @@ public:
     static EntityItemPointer factory(const EntityItemID& entityID, const EntityItemProperties& properties);
 
     MaterialEntityItem(const EntityItemID& entityItemID);
-    ~MaterialEntityItem();
 
     ALLOW_INSTANTIATION // This class can be instantiated
-
-    void update(const quint64& now) override;
-    bool needsToCallUpdate() const override { return true; }
 
     // methods for getting/setting all properties of an entity
     virtual EntityItemProperties getProperties(EntityPropertyFlags desiredProperties = EntityPropertyFlags()) const override;
@@ -53,9 +47,7 @@ public:
     virtual void setUnscaledDimensions(const glm::vec3& value) override;
 
     QString getMaterialURL() const { return _materialURL; }
-    void setMaterialURL(const QString& materialURLString, bool materialDataChanged = false);
-
-    void setCurrentMaterialName(const std::string& currentMaterialName);
+    void setMaterialURL(const QString& materialURLString);
 
     MaterialMappingMode getMaterialMappingMode() const { return _materialMappingMode; }
     void setMaterialMappingMode(MaterialMappingMode mode) { _materialMappingMode = mode; }
@@ -75,15 +67,6 @@ public:
 
     QString getMaterialData() const { return _materialData; }
     void setMaterialData(const QString& materialData);
-
-    graphics::ProceduralMaterialPointer getMaterial() const;
-
-    void setParentID(const QUuid& parentID) override;
-
-    void applyMaterial();
-    void removeMaterial();
-
-    void postParentFixup() override;
 
 private:
     // URL for this material.  Currently, only JSON format is supported.  Set to "materialData" to use the material data to live edit a material.
@@ -117,12 +100,6 @@ private:
     // How much to rotate this material within its parent's UV-space (degrees)
     float _materialMappingRot { 0 };
     QString _materialData;
-
-    ProceduralMaterialResourcePointer _networkMaterial;
-    ProceduralMaterialResource::ParsedMaterials _parsedMaterials;
-    std::string _currentMaterialName;
-
-    bool _retryApply { false };
 
 };
 

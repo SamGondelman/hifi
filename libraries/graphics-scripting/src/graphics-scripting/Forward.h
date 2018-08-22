@@ -11,7 +11,7 @@
 #include <DependencyManager.h>
 #include <SpatiallyNestable.h>
 
-#include "procedural/ProceduralMaterial.h"
+#include "graphics/Material.h"
 #include "graphics/TextureMap.h"
 
 namespace graphics {
@@ -64,7 +64,7 @@ namespace scriptable {
     class ScriptableMaterial {
     public:
         ScriptableMaterial() {}
-        ScriptableMaterial(const graphics::ProceduralMaterialPointer& material);
+        ScriptableMaterial(const graphics::MaterialPointer& material, const QString& proceduralString);
         ScriptableMaterial(const ScriptableMaterial& material) { *this = material; }
         ScriptableMaterial& operator=(const ScriptableMaterial& material);
 
@@ -91,6 +91,14 @@ namespace scriptable {
         QString scatteringMap;
         QString procedural;
     };
+    
+    struct MaterialLayerData {
+        MaterialLayerData(const graphics::MaterialPointer& material, const QString& proceduralString, quint16 priority) : material(material), proceduralString(proceduralString), priority(priority) {}
+
+        graphics::MaterialPointer material;
+        QString proceduralString;
+        quint16 priority;
+    };
 
     /**jsdoc
      * @typedef {object} Graphics.MaterialLayer
@@ -100,7 +108,7 @@ namespace scriptable {
     class ScriptableMaterialLayer {
     public:
         ScriptableMaterialLayer() {}
-        ScriptableMaterialLayer(const graphics::MaterialLayer& materialLayer) : material(materialLayer.material), priority(materialLayer.priority) {}
+        ScriptableMaterialLayer(const MaterialLayerData& materialLayer) : material(materialLayer.material, materialLayer.proceduralString), priority(materialLayer.priority) {}
         ScriptableMaterialLayer(const ScriptableMaterialLayer& materialLayer) { *this = materialLayer; }
         ScriptableMaterialLayer& operator=(const ScriptableMaterialLayer& materialLayer);
 
@@ -143,8 +151,8 @@ namespace scriptable {
 
         void append(const ScriptableMeshBase& mesh);
         void append(scriptable::WeakMeshPointer mesh);
-        void appendMaterial(const graphics::MaterialLayer& materialLayer, int shapeID, std::string materialName);
-        void appendMaterials(const std::unordered_map<std::string, graphics::MultiMaterial>& materialsToAppend);
+        void appendMaterial(const MaterialLayerData& materialLayer, int shapeID, const std::string& materialName);
+        void appendMaterials(const std::unordered_map<std::string, std::vector<MaterialLayerData>>& materialsToAppend);
         void appendMaterialNames(const std::vector<std::string>& names);
         // TODO: in future containers for these could go here
         // QVariantMap shapes;

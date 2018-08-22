@@ -26,6 +26,8 @@
 #include <render/Forward.h>
 #include <workload/Space.h>
 
+#include "procedural/ProceduralMaterial.h"
+
 class AbstractScriptingServicesInterface;
 class AbstractViewStateInterface;
 class Model;
@@ -117,6 +119,21 @@ public:
     // Access the workload Space
     workload::SpacePointer getWorkloadSpace() const { return _space; }
 
+    static void setAddMaterialToEntityOperator(std::function<bool(const QUuid&, graphics::MaterialLayer, const std::string&)> addMaterialToEntityOperator) { _addMaterialToEntityOperator = addMaterialToEntityOperator; }
+    static void setRemoveMaterialFromEntityOperator(std::function<bool(const QUuid&, graphics::ProceduralMaterialPointer, const std::string&)> removeMaterialFromEntityOperator) { _removeMaterialFromEntityOperator = removeMaterialFromEntityOperator; }
+    static bool addMaterialToEntity(const QUuid& entityID, graphics::MaterialLayer material, const std::string& parentMaterialName);
+    static bool removeMaterialFromEntity(const QUuid& entityID, graphics::ProceduralMaterialPointer material, const std::string& parentMaterialName);
+
+    static void setAddMaterialToAvatarOperator(std::function<bool(const QUuid&, graphics::MaterialLayer, const std::string&)> addMaterialToAvatarOperator) { _addMaterialToAvatarOperator = addMaterialToAvatarOperator; }
+    static void setRemoveMaterialFromAvatarOperator(std::function<bool(const QUuid&, graphics::ProceduralMaterialPointer, const std::string&)> removeMaterialFromAvatarOperator) { _removeMaterialFromAvatarOperator = removeMaterialFromAvatarOperator; }
+    static bool addMaterialToAvatar(const QUuid& avatarID, graphics::MaterialLayer material, const std::string& parentMaterialName);
+    static bool removeMaterialFromAvatar(const QUuid& avatarID, graphics::ProceduralMaterialPointer material, const std::string& parentMaterialName);
+
+    static void setAddMaterialToOverlayOperator(std::function<bool(const QUuid&, graphics::MaterialLayer, const std::string&)> addMaterialToOverlayOperator) { _addMaterialToOverlayOperator = addMaterialToOverlayOperator; }
+    static void setRemoveMaterialFromOverlayOperator(std::function<bool(const QUuid&, graphics::ProceduralMaterialPointer, const std::string&)> removeMaterialFromOverlayOperator) { _removeMaterialFromOverlayOperator = removeMaterialFromOverlayOperator; }
+    static bool addMaterialToOverlay(const QUuid& overlayID, graphics::MaterialLayer material, const std::string& parentMaterialName);
+    static bool removeMaterialFromOverlay(const QUuid& overlayID, graphics::ProceduralMaterialPointer material, const std::string& parentMaterialName);
+
 signals:
     void enterEntity(const EntityItemID& entityItemID);
     void leaveEntity(const EntityItemID& entityItemID);
@@ -188,6 +205,13 @@ private:
     unsigned int _mouseRayPickID;
     std::function<RayToEntityIntersectionResult(unsigned int)> _getPrevRayPickResultOperator;
     std::function<void(unsigned int, bool)> _setPrecisionPickingOperator;
+
+    static std::function<bool(const QUuid&, graphics::MaterialLayer, const std::string&)> _addMaterialToEntityOperator;
+    static std::function<bool(const QUuid&, graphics::ProceduralMaterialPointer, const std::string&)> _removeMaterialFromEntityOperator;
+    static std::function<bool(const QUuid&, graphics::MaterialLayer, const std::string&)> _addMaterialToAvatarOperator;
+    static std::function<bool(const QUuid&, graphics::ProceduralMaterialPointer, const std::string&)> _removeMaterialFromAvatarOperator;
+    static std::function<bool(const QUuid&, graphics::MaterialLayer, const std::string&)> _addMaterialToOverlayOperator;
+    static std::function<bool(const QUuid&, graphics::ProceduralMaterialPointer, const std::string&)> _removeMaterialFromOverlayOperator;
 
     class LayeredZone {
     public:

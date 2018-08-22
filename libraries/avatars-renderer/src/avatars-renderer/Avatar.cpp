@@ -1910,7 +1910,7 @@ scriptable::ScriptableModelBase Avatar::getScriptableModel() {
     result.objectID = getSessionUUID().isNull() ? AVATAR_SELF_ID : getSessionUUID();
     {
         std::lock_guard<std::mutex> lock(_materialsLock);
-        result.appendMaterials(_materials);
+        result.appendMaterials(graphics::MultiMaterial::convertToMaterialLayerData(_materials));
     }
     return result;
 }

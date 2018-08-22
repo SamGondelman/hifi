@@ -141,7 +141,6 @@ EntityRenderer::EntityRenderer(const EntityItemPointer& entity) : _entity(entity
         _needsRenderUpdate = true;
         emit requestRenderUpdate();
     });
-    _materials = entity->getMaterials();
 }
 
 EntityRenderer::~EntityRenderer() { }
