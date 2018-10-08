@@ -24,8 +24,8 @@ MaterialEntityItem::MaterialEntityItem(const EntityItemID& entityItemID) : Entit
     _type = EntityTypes::Material;
 }
 
-EntityItemProperties MaterialEntityItem::getProperties(EntityPropertyFlags desiredProperties) const {
-    EntityItemProperties properties = EntityItem::getProperties(desiredProperties); // get the properties from our base class
+EntityItemProperties MaterialEntityItem::getProperties(const EntityPropertyFlags& desiredProperties, bool allowEmptyDesiredProperties) const {
+    EntityItemProperties properties = EntityItem::getProperties(desiredProperties, allowEmptyDesiredProperties); // get the properties from our base class
     COPY_ENTITY_PROPERTY_TO_PROPERTIES(materialURL, getMaterialURL);
     COPY_ENTITY_PROPERTY_TO_PROPERTIES(materialMappingMode, getMaterialMappingMode);
     COPY_ENTITY_PROPERTY_TO_PROPERTIES(priority, getPriority);

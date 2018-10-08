@@ -76,6 +76,7 @@ void CauterizedModel::createRenderItemSet() {
         // Run through all of the meshes, and place them into their segregated, but unsorted buckets
         int shapeID = 0;
         uint32_t numMeshes = (uint32_t)meshes.size();
+        const FBXGeometry& fbxGeometry = getFBXGeometry();
         for (uint32_t i = 0; i < numMeshes; i++) {
             const auto& mesh = meshes.at(i);
             if (!mesh) {
@@ -85,6 +86,8 @@ void CauterizedModel::createRenderItemSet() {
             // Create the render payloads
             int numParts = (int)mesh->getNumParts();
             for (int partIndex = 0; partIndex < numParts; partIndex++) {
+                initializeBlendshapes(fbxGeometry.meshes[i], i);
+
                 auto ptr = std::make_shared<CauterizedMeshPartPayload>(shared_from_this(), i, partIndex, shapeID, transform, offset);
                 _modelMeshRenderItems << std::static_pointer_cast<ModelMeshPartPayload>(ptr);
                 auto material = getGeometry()->getShapeMaterial(shapeID);
@@ -93,6 +96,7 @@ void CauterizedModel::createRenderItemSet() {
                 shapeID++;
             }
         }
+        _blendshapeBuffersInitialized = true;
     } else {
         Model::createRenderItemSet();
     }
@@ -170,9 +174,10 @@ void CauterizedModel::updateClusterMatrices() {
     }
 
     // post the blender if we're not currently waiting for one to finish
-    if (geometry.hasBlendedMeshes() && _blendshapeCoefficients != _blendedBlendshapeCoefficients) {
+    auto modelBlender = DependencyManager::get<ModelBlender>();
+    if (_blendshapeBuffersInitialized && modelBlender->shouldComputeBlendshapes() && geometry.hasBlendedMeshes() && _blendshapeCoefficients != _blendedBlendshapeCoefficients) {
         _blendedBlendshapeCoefficients = _blendshapeCoefficients;
-        DependencyManager::get<ModelBlender>()->noteRequiresBlend(getThisPointer());
+        modelBlender->noteRequiresBlend(getThisPointer());
     }
 }
 
@@ -220,8 +225,9 @@ void CauterizedModel::updateRenderItems() {
                 bool invalidatePayloadShapeKey = self->shouldInvalidatePayloadShapeKey(meshIndex);
                 bool useDualQuaternionSkinning = self->getUseDualQuaternionSkinning();
 
-                transaction.updateItem<CauterizedMeshPartPayload>(itemID, [modelTransform, meshState, useDualQuaternionSkinning, cauterizedMeshState, invalidatePayloadShapeKey,
-                        isWireframe, renderItemKeyGlobalFlags, enableCauterization](CauterizedMeshPartPayload& data) {
+                transaction.updateItem<ModelMeshPartPayload>(itemID, [modelTransform, meshState, useDualQuaternionSkinning, cauterizedMeshState, invalidatePayloadShapeKey,
+                        isWireframe, renderItemKeyGlobalFlags, enableCauterization](ModelMeshPartPayload& mmppData) {
+                    CauterizedMeshPartPayload& data = static_cast<CauterizedMeshPartPayload&>(mmppData);
                     if (useDualQuaternionSkinning) {
                         data.updateClusterBuffer(meshState.clusterDualQuaternions,
                                                  cauterizedMeshState.clusterDualQuaternions);

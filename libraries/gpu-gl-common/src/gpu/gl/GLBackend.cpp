@@ -20,6 +20,9 @@
 #include "nvToolsExt.h"
 #endif
 
+// Define the GPU_BATCH_DETAILED_TRACING to get detailed tracing of the commands during the batch executions
+// #define GPU_BATCH_DETAILED_TRACING
+
 #include <GPUIdent.h>
 
 #include "GLTexture.h"
@@ -201,9 +204,10 @@ void GLBackend::renderPassTransfer(const Batch& batch) {
                 {
                     Vec2u outputSize{ 1,1 };
 
-                    if (_output._framebuffer) {
-                        outputSize.x = _output._framebuffer->getWidth();
-                        outputSize.y = _output._framebuffer->getHeight();
+                    auto framebuffer = acquire(_output._framebuffer);
+                    if (framebuffer) {
+                        outputSize.x = framebuffer->getWidth();
+                        outputSize.y = framebuffer->getHeight();
                     } else if (glm::dot(_transform._projectionJitter, _transform._projectionJitter)>0.0f) {
                         qCWarning(gpugllogging) << "Jittering needs to have a frame buffer to be set";
                     }
@@ -220,6 +224,7 @@ void GLBackend::renderPassTransfer(const Batch& batch) {
                     _stereo._contextDisable = false;
                     break;
 
+                case Batch::COMMAND_setFramebuffer:
                 case Batch::COMMAND_setViewportTransform:
                 case Batch::COMMAND_setViewTransform:
                 case Batch::COMMAND_setProjectionTransform:
@@ -269,6 +274,9 @@ void GLBackend::renderPassDraw(const Batch& batch) {
             case Batch::COMMAND_drawIndexedInstanced:
             case Batch::COMMAND_multiDrawIndirect:
             case Batch::COMMAND_multiDrawIndexedIndirect: {
+#ifdef GPU_BATCH_DETAILED_TRACING
+                PROFILE_RANGE(render_gpu_gl_detail, "drawcall");
+#endif 
                 // updates for draw calls
                 ++_currentDraw;
                 updateInput();
@@ -279,6 +287,94 @@ void GLBackend::renderPassDraw(const Batch& batch) {
                 (this->*(call))(batch, *offset);
                 break;
             }
+#ifdef GPU_BATCH_DETAILED_TRACING
+            //case Batch::COMMAND_setModelTransform:
+            //case Batch::COMMAND_setViewTransform:
+            //case Batch::COMMAND_setProjectionTransform:
+            case Batch::COMMAND_setProjectionJitter:
+            case Batch::COMMAND_setViewportTransform:
+            case Batch::COMMAND_setDepthRangeTransform:
+            {
+                PROFILE_RANGE(render_gpu_gl_detail, "transform");
+                CommandCall call = _commandCalls[(*command)];
+                (this->*(call))(batch, *offset);
+                break;
+            }
+            case Batch::COMMAND_clearFramebuffer:
+            {
+                PROFILE_RANGE(render_gpu_gl_detail, "clear");
+                CommandCall call = _commandCalls[(*command)];
+                (this->*(call))(batch, *offset);
+                break;
+            }
+            case Batch::COMMAND_blit:
+            {
+                PROFILE_RANGE(render_gpu_gl_detail, "blit");
+                CommandCall call = _commandCalls[(*command)];
+                (this->*(call))(batch, *offset);
+                break;
+            }
+            case Batch::COMMAND_setInputFormat:
+            case Batch::COMMAND_setInputBuffer:
+            case Batch::COMMAND_setIndexBuffer:
+            case Batch::COMMAND_setIndirectBuffer: {
+                PROFILE_RANGE(render_gpu_gl_detail, "input");
+                CommandCall call = _commandCalls[(*command)];
+                (this->*(call))(batch, *offset);
+                break;
+            }
+            case Batch::COMMAND_setStateBlendFactor:
+            case Batch::COMMAND_setStateScissorRect:
+            case Batch::COMMAND_setPipeline: {
+                PROFILE_RANGE(render_gpu_gl_detail, "pipeline");
+                CommandCall call = _commandCalls[(*command)];
+                (this->*(call))(batch, *offset);
+                break;
+            }
+            case Batch::COMMAND_setUniformBuffer:
+            {
+                PROFILE_RANGE(render_gpu_gl_detail, "ubo");
+                CommandCall call = _commandCalls[(*command)];
+                (this->*(call))(batch, *offset);
+                break;
+            }
+            case Batch::COMMAND_setResourceBuffer:
+            case Batch::COMMAND_setResourceTexture:
+            case Batch::COMMAND_setResourceTextureTable:
+            {
+                PROFILE_RANGE(render_gpu_gl_detail, "resource");
+                CommandCall call = _commandCalls[(*command)];
+                (this->*(call))(batch, *offset);
+                break;
+            }
+
+            case Batch::COMMAND_setResourceFramebufferSwapChainTexture:
+            case Batch::COMMAND_setFramebuffer:
+            case Batch::COMMAND_setFramebufferSwapChain:
+            {
+                PROFILE_RANGE(render_gpu_gl_detail, "framebuffer");
+                CommandCall call = _commandCalls[(*command)];
+                (this->*(call))(batch, *offset);
+                break;
+            }
+            case Batch::COMMAND_generateTextureMips:
+            {
+                PROFILE_RANGE(render_gpu_gl_detail, "genMipMaps");
+
+                CommandCall call = _commandCalls[(*command)];
+                (this->*(call))(batch, *offset);
+                break;
+            }
+            case Batch::COMMAND_beginQuery:
+            case Batch::COMMAND_endQuery:
+            case Batch::COMMAND_getQuery:
+            {
+                PROFILE_RANGE(render_gpu_gl_detail, "query");
+                CommandCall call = _commandCalls[(*command)];
+                (this->*(call))(batch, *offset);
+                break;
+            }
+#endif 
             default: {
                 CommandCall call = _commandCalls[(*command)];
                 (this->*(call))(batch, *offset);
@@ -292,6 +388,8 @@ void GLBackend::renderPassDraw(const Batch& batch) {
 }
 
 void GLBackend::render(const Batch& batch) {
+    PROFILE_RANGE(render_gpu_gl, batch.getName());
+
     _transform._skybox = _stereo._skybox = batch.isSkyboxEnabled();
     // Allow the batch to override the rendering stereo settings
     // for things like full framebuffer copy operations (deferred lighting passes)
@@ -765,7 +863,6 @@ void GLBackend::recycle() const {
     }
     
     _textureManagement._transferEngine->manageMemory();
-    Texture::KtxStorage::releaseOpenKtxFiles();
 }
 
 void GLBackend::setCameraCorrection(const Mat4& correction, const Mat4& prevRenderView, bool reset) {

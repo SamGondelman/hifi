@@ -46,6 +46,7 @@
 #include "InterfaceLogging.h"
 #include "LocationBookmarks.h"
 #include "DeferredLightingEffect.h"
+#include "PickManager.h"
 
 #include "AmbientOcclusionEffect.h"
 #include "RenderShadowTask.h"
@@ -88,19 +89,6 @@ Menu::Menu() {
 
     // Edit menu ----------------------------------
     MenuWrapper* editMenu = addMenu("Edit");
-
-    // Edit > Undo
-    QUndoStack* undoStack = qApp->getUndoStack();
-    QAction* undoAction = undoStack->createUndoAction(editMenu);
-    undoAction->setShortcut(Qt::CTRL | Qt::Key_Z);
-    addActionToQMenuAndActionHash(editMenu, undoAction);
-
-    // Edit > Redo
-    QAction* redoAction = undoStack->createRedoAction(editMenu);
-    redoAction->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Z);
-    addActionToQMenuAndActionHash(editMenu, redoAction);
-
-    editMenu->addSeparator();
 
     // Edit > Cut
     auto cutAction = addActionToQMenuAndActionHash(editMenu, "Cut", QKeySequence::Cut);
@@ -254,7 +242,7 @@ Menu::Menu() {
     connect(action, &QAction::triggered, [] {
             auto tablet = DependencyManager::get<TabletScriptingInterface>()->getTablet("com.highfidelity.interface.tablet.system");
             auto hmd = DependencyManager::get<HMDScriptingInterface>();
-            tablet->loadQMLSource("hifi/tablet/ControllerSettings.qml");
+            tablet->pushOntoStack("hifi/tablet/ControllerSettings.qml");
 
             if (!hmd->getShouldShowTablet()) {
                 hmd->toggleShouldShowTablet();
@@ -275,13 +263,6 @@ Menu::Menu() {
     connect(action, &QAction::triggered, [] {
         qApp->showDialog(QString("hifi/dialogs/GraphicsPreferencesDialog.qml"),
             QString("hifi/tablet/TabletGraphicsPreferences.qml"), "GraphicsPreferencesDialog");
-    });
-
-    // Settings > Attachments...
-    action = addActionToQMenuAndActionHash(settingsMenu, MenuOption::Attachments);
-    connect(action, &QAction::triggered, [] {
-        qApp->showDialog(QString("hifi/dialogs/AttachmentsDialog.qml"),
-                         QString("hifi/tablet/TabletAttachmentsDialog.qml"), "AttachmentsDialog");
     });
 
     // Settings > Developer Menu
@@ -457,6 +438,9 @@ Menu::Menu() {
             DEV_DECIMATE_TEXTURES = checked;
         });
     }
+
+    addCheckableActionToQMenuAndActionHash(renderOptionsMenu, MenuOption::ComputeBlendshapes, 0, true,
+        DependencyManager::get<ModelBlender>().data(), SLOT(setComputeBlendshapes(bool)));
 
     // Developer > Assets >>>
     // Menu item is not currently needed but code should be kept in case it proves useful again at some stage.
@@ -695,6 +679,11 @@ Menu::Menu() {
     addCheckableActionToQMenuAndActionHash(physicsOptionsMenu, MenuOption::PhysicsShowBulletConstraints, 0, false, qApp, SLOT(setShowBulletConstraints(bool)));
     addCheckableActionToQMenuAndActionHash(physicsOptionsMenu, MenuOption::PhysicsShowBulletConstraintLimits, 0, false, qApp, SLOT(setShowBulletConstraintLimits(bool)));
 
+    // Developer > Picking >>>
+    MenuWrapper* pickingOptionsMenu = developerMenu->addMenu("Picking");
+    addCheckableActionToQMenuAndActionHash(pickingOptionsMenu, MenuOption::ForceCoarsePicking, 0, false,
+        DependencyManager::get<PickManager>().data(), SLOT(setForceCoarsePicking(bool)));
+
     // Developer > Display Crash Options
     addCheckableActionToQMenuAndActionHash(developerMenu, MenuOption::DisplayCrashOptions, 0, true);
     // Developer > Crash >>>
@@ -735,6 +724,7 @@ Menu::Menu() {
 
     // Developer > Stats
     addCheckableActionToQMenuAndActionHash(developerMenu, MenuOption::Stats);
+    addCheckableActionToQMenuAndActionHash(developerMenu, MenuOption::AnimStats);
 
     // Settings > Enable Speech Control API
 #if defined(Q_OS_MAC) || defined(Q_OS_WIN)
