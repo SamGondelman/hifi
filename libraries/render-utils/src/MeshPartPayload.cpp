@@ -170,6 +170,7 @@ void MeshPartPayload::render(RenderArgs* args) {
         outColor = _drawMaterials.top().material->getProcedural().getColor(outColor);
         _drawMaterials.top().material->editProcedural().prepare(batch, _drawTransform.getTranslation(), _drawTransform.getScale(), _drawTransform.getRotation(),
                                                                 ProceduralProgramKey(outColor.a < 1.0f));
+        batch._glColor4f(outColor.r, outColor.g, outColor.b, outColor.a);
     } else {
          // apply material properties
         if (args->_renderMode != render::Args::RenderMode::SHADOW_RENDER_MODE) {
@@ -462,6 +463,7 @@ void ModelMeshPartPayload::render(RenderArgs* args) {
         outColor = _drawMaterials.top().material->getProcedural().getColor(outColor);
         _drawMaterials.top().material->editProcedural().prepare(batch, _transform.getTranslation(), _transform.getScale(), _transform.getRotation(),
                                                                 ProceduralProgramKey(outColor.a < 1.0f, _shapeKey.isDeformed(), _shapeKey.isDualQuatSkinned()));
+        batch._glColor4f(outColor.r, outColor.g, outColor.b, outColor.a);
     } else {
          // apply material properties
         if (args->_renderMode != render::Args::RenderMode::SHADOW_RENDER_MODE) {

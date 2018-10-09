@@ -17,10 +17,7 @@ if (NOT ANDROID)
 
 endif ()
 
-link_hifi_libraries(shared networking graphics model-networking recording avatars fbx entities controllers animation audio)
-include_hifi_library_headers(gl)
-include_hifi_library_headers(procedural)
-include_hifi_library_headers(octree)
+link_hifi_libraries(shared networking model-networking recording avatars fbx entities controllers animation audio midi)
+include_hifi_library_headers(graphics)
 include_hifi_library_headers(gpu)
-include_hifi_library_headers(ktx)
-include_hifi_library_headers(image)
+include_hifi_library_headers(octree)

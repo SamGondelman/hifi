@@ -112,151 +112,176 @@ ProceduralMaterialResource::ParsedMaterials ProceduralMaterialResource::parseJSO
 /**jsdoc
  * A material such as may be used by a {@link Entities.EntityType|Material} entity.
  * @typedef {object} Material
- * @property {string} name="" - A name for the material.
- * @property {string} model="hifi_pbr" - <em>Currently not used.</em>
- * @property {Vec3Color|RGBS} emissive - The emissive color, i.e., the color that the material emits. A {@link Vec3Color} value 
- *     is treated as sRGB. A {@link RGBS} value can be either RGB or sRGB.
- * @property {number} opacity=1.0 - The opacity, <code>0.0</code> &ndash; <code>1.0</code>.
- * @property {boolean} unlit=false - If <code>true</code>, the material is not lit.
+ * @property {string} model="hifi_pbr" - Different material models support different properties and rendering modes.
+ *     Supported models are: "hifi_pbr", "hifi_shader_simple"
+ * @property {string} name="" - A name for the material.  Supported by all material models.
  * @property {Vec3Color|RGBS} albedo - The albedo color. A {@link Vec3Color} value is treated as sRGB. A {@link RGBS} value can 
- *     be either RGB or sRGB.
- * @property {number} roughness - The roughness, <code>0.0</code> &ndash; <code>1.0</code>.
- * @property {number} metallic - The metallicness, <code>0.0</code> &ndash; <code>1.0</code>.
- * @property {number} scattering - The scattering, <code>0.0</code> &ndash; <code>1.0</code>.
- * @property {string} emissiveMap - URL of emissive texture image.
- * @property {string} albedoMap - URL of albedo texture image.
+ *     be either RGB or sRGB.  Supported by all material models.
+ * @property {number} opacity=1.0 - The opacity, <code>0.0</code> &ndash; <code>1.0</code>.  Supported by all material models.
+ * @property {Vec3Color|RGBS} emissive - The emissive color, i.e., the color that the material emits. A {@link Vec3Color} value
+ *     is treated as sRGB. A {@link RGBS} value can be either RGB or sRGB. "hifi_pbr" model only.
+ * @property {boolean} unlit=false - If <code>true</code>, the material is not lit. "hifi_pbr" model only.
+ * @property {number} roughness - The roughness, <code>0.0</code> &ndash; <code>1.0</code>.  "hifi_pbr" model only.
+ * @property {number} metallic - The metallicness, <code>0.0</code> &ndash; <code>1.0</code>.  "hifi_pbr" model only.
+ * @property {number} scattering - The scattering, <code>0.0</code> &ndash; <code>1.0</code>.  "hifi_pbr" model only.
+ * @property {string} emissiveMap - URL of emissive texture image.  "hifi_pbr" model only.
+ * @property {string} albedoMap - URL of albedo texture image.  "hifi_pbr" model only.
  * @property {string} opacityMap - URL of opacity texture image. Set value the same as the <code>albedoMap</code> value for 
- *     transparency.
- * @property {string} roughnessMap - URL of roughness texture image. Can use this or <code>glossMap</code>, but not both.
- * @property {string} glossMap - URL of gloss texture image. Can use this or <code>roughnessMap</code>, but not both.
- * @property {string} metallicMap - URL of metallic texture image. Can use this or <code>specularMap</code>, but not both.
- * @property {string} specularMap - URL of specular texture image. Can use this or <code>metallicMap</code>, but not both.
- * @property {string} normalMap - URL of normal texture image. Can use this or <code>bumpMap</code>, but not both.
- * @property {string} bumpMap - URL of bump texture image. Can use this or <code>normalMap</code>, but not both.
- * @property {string} occlusionMap - URL of occlusion texture image.
+ *     transparency.  "hifi_pbr" model only.
+ * @property {string} roughnessMap - URL of roughness texture image. Can use this or <code>glossMap</code>, but not both.  "hifi_pbr" model only.
+ * @property {string} glossMap - URL of gloss texture image. Can use this or <code>roughnessMap</code>, but not both.  "hifi_pbr" model only.
+ * @property {string} metallicMap - URL of metallic texture image. Can use this or <code>specularMap</code>, but not both.  "hifi_pbr" model only.
+ * @property {string} specularMap - URL of specular texture image. Can use this or <code>metallicMap</code>, but not both.  "hifi_pbr" model only.
+ * @property {string} normalMap - URL of normal texture image. Can use this or <code>bumpMap</code>, but not both.  "hifi_pbr" model only.
+ * @property {string} bumpMap - URL of bump texture image. Can use this or <code>normalMap</code>, but not both.  "hifi_pbr" model only.
+ * @property {string} occlusionMap - URL of occlusion texture image.  "hifi_pbr" model only.
  * @property {string} scatteringMap - URL of scattering texture image. Only used if <code>normalMap</code> or 
- *     <code>bumpMap</code> is specified.
- * @property {string} lightMap - URL of light map texture image. <em>Currently not used.</em>
- * @property {ProceduralData} procedural - The definition of a procedural shader material.
+ *     <code>bumpMap</code> is specified.  "hifi_pbr" model only.
+ * @property {string} lightMap - URL of light map texture image. <em>Currently not used.</em>  "hifi_pbr" model only.
+ * @property {ProceduralData} procedural - The definition of a procedural shader material.  "hifi_shader_simple" model only.
  */
 // Note: See MaterialEntityItem.h for default values used in practice.
 std::pair<std::string, graphics::ProceduralMaterialPointer> ProceduralMaterialResource::parseJSONMaterial(const QJsonObject& materialJSON, const QUrl& baseUrl) {
     std::string name = "";
     graphics::ProceduralMaterialPointer material = std::make_shared<graphics::ProceduralMaterial>();
-    for (auto& key : materialJSON.keys()) {
-        if (key == "name") {
-            auto nameJSON = materialJSON.value(key);
-            if (nameJSON.isString()) {
-                name = nameJSON.toString().toStdString();
-            }
-        } else if (key == "model") {
-            auto modelJSON = materialJSON.value(key);
-            if (modelJSON.isString()) {
-                material->setModel(modelJSON.toString().toStdString());
-            }
-        } else if (key == "emissive") {
-            glm::vec3 color;
-            bool isSRGB;
-            bool valid = parseJSONColor(materialJSON.value(key), color, isSRGB);
-            if (valid) {
-                material->setEmissive(color, isSRGB);
-            }
-        } else if (key == "opacity") {
-            auto value = materialJSON.value(key);
-            if (value.isDouble()) {
-                material->setOpacity(value.toDouble());
-            }
-        } else if (key == "unlit") {
-            auto value = materialJSON.value(key);
-            if (value.isBool()) {
-                material->setUnlit(value.toBool());
-            }
-        } else if (key == "albedo") {
-            glm::vec3 color;
-            bool isSRGB;
-            bool valid = parseJSONColor(materialJSON.value(key), color, isSRGB);
-            if (valid) {
-                material->setAlbedo(color, isSRGB);
-            }
-        } else if (key == "roughness") {
-            auto value = materialJSON.value(key);
-            if (value.isDouble()) {
-                material->setRoughness(value.toDouble());
-            }
-        } else if (key == "metallic") {
-            auto value = materialJSON.value(key);
-            if (value.isDouble()) {
-                material->setMetallic(value.toDouble());
-            }
-        } else if (key == "scattering") {
-            auto value = materialJSON.value(key);
-            if (value.isDouble()) {
-                material->setScattering(value.toDouble());
-            }
-        } else if (key == "emissiveMap") {
-            auto value = materialJSON.value(key);
-            if (value.isString()) {
-                material->setEmissiveMap(baseUrl.resolved(value.toString()));
-            }
-        } else if (key == "albedoMap") {
-            auto value = materialJSON.value(key);
-            if (value.isString()) {
-                QString urlString = value.toString();
-                bool useAlphaChannel = false;
-                auto opacityMap = materialJSON.find("opacityMap");
-                if (opacityMap != materialJSON.end() && opacityMap->isString() && opacityMap->toString() == urlString) {
-                    useAlphaChannel = true;
+    std::string modelString = "hifi_pbr";
+    auto modelJSON = materialJSON.value("model");
+    if (modelJSON.isString()) {
+        modelString = modelJSON.toString().toStdString();
+        material->setModel(modelString);
+    }
+    if (modelString == "hifi_pbr") {
+        for (auto& key : materialJSON.keys()) {
+            if (key == "name") {
+                auto nameJSON = materialJSON.value(key);
+                if (nameJSON.isString()) {
+                    name = nameJSON.toString().toStdString();
                 }
-                material->setAlbedoMap(baseUrl.resolved(urlString), useAlphaChannel);
+            } else if (key == "emissive") {
+                glm::vec3 color;
+                bool isSRGB;
+                bool valid = parseJSONColor(materialJSON.value(key), color, isSRGB);
+                if (valid) {
+                    material->setEmissive(color, isSRGB);
+                }
+            } else if (key == "opacity") {
+                auto value = materialJSON.value(key);
+                if (value.isDouble()) {
+                    material->setOpacity(value.toDouble());
+                }
+            } else if (key == "unlit") {
+                auto value = materialJSON.value(key);
+                if (value.isBool()) {
+                    material->setUnlit(value.toBool());
+                }
+            } else if (key == "albedo") {
+                glm::vec3 color;
+                bool isSRGB;
+                bool valid = parseJSONColor(materialJSON.value(key), color, isSRGB);
+                if (valid) {
+                    material->setAlbedo(color, isSRGB);
+                }
+            } else if (key == "roughness") {
+                auto value = materialJSON.value(key);
+                if (value.isDouble()) {
+                    material->setRoughness(value.toDouble());
+                }
+            } else if (key == "metallic") {
+                auto value = materialJSON.value(key);
+                if (value.isDouble()) {
+                    material->setMetallic(value.toDouble());
+                }
+            } else if (key == "scattering") {
+                auto value = materialJSON.value(key);
+                if (value.isDouble()) {
+                    material->setScattering(value.toDouble());
+                }
+            } else if (key == "emissiveMap") {
+                auto value = materialJSON.value(key);
+                if (value.isString()) {
+                    material->setEmissiveMap(baseUrl.resolved(value.toString()));
+                }
+            } else if (key == "albedoMap") {
+                auto value = materialJSON.value(key);
+                if (value.isString()) {
+                    QString urlString = value.toString();
+                    bool useAlphaChannel = false;
+                    auto opacityMap = materialJSON.find("opacityMap");
+                    if (opacityMap != materialJSON.end() && opacityMap->isString() && opacityMap->toString() == urlString) {
+                        useAlphaChannel = true;
+                    }
+                    material->setAlbedoMap(baseUrl.resolved(urlString), useAlphaChannel);
+                }
+            } else if (key == "roughnessMap") {
+                auto value = materialJSON.value(key);
+                if (value.isString()) {
+                    material->setRoughnessMap(baseUrl.resolved(value.toString()), false);
+                }
+            } else if (key == "glossMap") {
+                auto value = materialJSON.value(key);
+                if (value.isString()) {
+                    material->setRoughnessMap(baseUrl.resolved(value.toString()), true);
+                }
+            } else if (key == "metallicMap") {
+                auto value = materialJSON.value(key);
+                if (value.isString()) {
+                    material->setMetallicMap(baseUrl.resolved(value.toString()), false);
+                }
+            } else if (key == "specularMap") {
+                auto value = materialJSON.value(key);
+                if (value.isString()) {
+                    material->setMetallicMap(baseUrl.resolved(value.toString()), true);
+                }
+            } else if (key == "normalMap") {
+                auto value = materialJSON.value(key);
+                if (value.isString()) {
+                    material->setNormalMap(baseUrl.resolved(value.toString()), false);
+                }
+            } else if (key == "bumpMap") {
+                auto value = materialJSON.value(key);
+                if (value.isString()) {
+                    material->setNormalMap(baseUrl.resolved(value.toString()), true);
+                }
+            } else if (key == "occlusionMap") {
+                auto value = materialJSON.value(key);
+                if (value.isString()) {
+                    material->setOcclusionMap(baseUrl.resolved(value.toString()));
+                }
+            } else if (key == "scatteringMap") {
+                auto value = materialJSON.value(key);
+                if (value.isString()) {
+                    material->setScatteringMap(baseUrl.resolved(value.toString()));
+                }
+            } else if (key == "lightMap") {
+                auto value = materialJSON.value(key);
+                if (value.isString()) {
+                    material->setLightmapMap(baseUrl.resolved(value.toString()));
+                }
             }
-        } else if (key == "roughnessMap") {
-            auto value = materialJSON.value(key);
-            if (value.isString()) {
-                material->setRoughnessMap(baseUrl.resolved(value.toString()), false);
+        }
+    } else if (modelString == "hifi_shader_simple") {
+        for (auto& key : materialJSON.keys()) {
+            if (key == "name") {
+                auto nameJSON = materialJSON.value(key);
+                if (nameJSON.isString()) {
+                    name = nameJSON.toString().toStdString();
+                }
+            } else if (key == "opacity") {
+                auto value = materialJSON.value(key);
+                if (value.isDouble()) {
+                    material->setOpacity(value.toDouble());
+                }
+            } else if (key == "albedo") {
+                glm::vec3 color;
+                bool isSRGB;
+                bool valid = parseJSONColor(materialJSON.value(key), color, isSRGB);
+                if (valid) {
+                    material->setAlbedo(color, isSRGB);
+                }
+            } else if (key == "procedural") {
+                auto value = materialJSON.value(key);
+                material->setProceduralData(QJsonDocument::fromVariant(value.toVariant()).toJson());
             }
-        } else if (key == "glossMap") {
-            auto value = materialJSON.value(key);
-            if (value.isString()) {
-                material->setRoughnessMap(baseUrl.resolved(value.toString()), true);
-            }
-        } else if (key == "metallicMap") {
-            auto value = materialJSON.value(key);
-            if (value.isString()) {
-                material->setMetallicMap(baseUrl.resolved(value.toString()), false);
-            }
-        } else if (key == "specularMap") {
-            auto value = materialJSON.value(key);
-            if (value.isString()) {
-                material->setMetallicMap(baseUrl.resolved(value.toString()), true);
-            }
-        } else if (key == "normalMap") {
-            auto value = materialJSON.value(key);
-            if (value.isString()) {
-                material->setNormalMap(baseUrl.resolved(value.toString()), false);
-            }
-        } else if (key == "bumpMap") {
-            auto value = materialJSON.value(key);
-            if (value.isString()) {
-                material->setNormalMap(baseUrl.resolved(value.toString()), true);
-            }
-        } else if (key == "occlusionMap") {
-            auto value = materialJSON.value(key);
-            if (value.isString()) {
-                material->setOcclusionMap(baseUrl.resolved(value.toString()));
-            }
-        } else if (key == "scatteringMap") {
-            auto value = materialJSON.value(key);
-            if (value.isString()) {
-                material->setScatteringMap(baseUrl.resolved(value.toString()));
-            }
-        } else if (key == "lightMap") {
-            auto value = materialJSON.value(key);
-            if (value.isString()) {
-                material->setLightmapMap(baseUrl.resolved(value.toString()));
-            }
-        } else if (key == "procedural") {
-            auto value = materialJSON.value(key);
-            material->setProceduralData(QJsonDocument::fromVariant(value.toVariant()).toJson());
         }
     }
     return std::pair<std::string, graphics::ProceduralMaterialPointer>(name, material);

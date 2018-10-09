@@ -130,7 +130,10 @@ public:
     gpu::Shader::Source _transparentFragmentSource;
 
     gpu::StatePointer _opaqueState { std::make_shared<gpu::State>() };
-    gpu::StatePointer _transparentState { std::make_shared<gpu::State>() };
+    gpu::StatePointer _transparentState{ std::make_shared<gpu::State>() };
+
+    static std::function<void(gpu::StatePointer)> opaqueStencil;
+    static std::function<void(gpu::StatePointer)> transparentStencil;
 
 protected:
     // Procedural metadata

@@ -48,7 +48,7 @@ void MaterialEntityRenderer::doRenderUpdateSynchronousTyped(const ScenePointer& 
         bool materialNeedsUpdate = false;
         if (entity->getMaterialURL() != _materialURL) {
             if (!materialNeedsUpdate) {
-                removeMaterial();
+                deleteMaterial();
             }
             _materialURL = entity->getMaterialURL();
             if (_materialURL.startsWith("materialData")) {
@@ -58,7 +58,7 @@ void MaterialEntityRenderer::doRenderUpdateSynchronousTyped(const ScenePointer& 
         }
         if (entity->getParentID() != _parentID) {
             if (!materialNeedsUpdate) {
-                removeMaterial();
+                deleteMaterial();
                 materialNeedsUpdate = true;
             }
             _parentID = entity->getParentID();
@@ -67,7 +67,7 @@ void MaterialEntityRenderer::doRenderUpdateSynchronousTyped(const ScenePointer& 
             entity->getMaterialMappingScale() != _materialMappingScale ||
             entity->getMaterialMappingRot() != _materialMappingRot) {
             if (!materialNeedsUpdate) {
-                removeMaterial();
+                deleteMaterial();
                 materialNeedsUpdate = true;
             }
             _materialMappingPos = entity->getMaterialMappingPos();
@@ -76,21 +76,21 @@ void MaterialEntityRenderer::doRenderUpdateSynchronousTyped(const ScenePointer& 
         }
         if (entity->getPriority() != _priority) {
             if (!materialNeedsUpdate) {
-                removeMaterial();
+                deleteMaterial();
                 materialNeedsUpdate = true;
             }
             _priority = entity->getPriority();
         }
         if (entity->getParentMaterialName() != _parentMaterialName) {
             if (!materialNeedsUpdate) {
-                removeMaterial();
+                deleteMaterial();
                 materialNeedsUpdate = true;
             }
             _parentMaterialName = entity->getParentMaterialName();
         }
         if (entity->getMaterialData() != _materialData) {
             if (!materialNeedsUpdate) {
-                removeMaterial();
+                deleteMaterial();
             }
             _materialData = entity->getMaterialData();
             if (_materialURL.startsWith("materialData")) {
@@ -270,7 +270,7 @@ graphics::ProceduralMaterialPointer MaterialEntityRenderer::getMaterial() const 
     }
 }
 
-void MaterialEntityRenderer::removeMaterial() {
+void MaterialEntityRenderer::deleteMaterial() {
     graphics::ProceduralMaterialPointer material = getMaterial();
     if (!material) {
         return;

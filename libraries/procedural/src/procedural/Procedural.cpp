@@ -21,7 +21,6 @@
 #include <GLMHelpers.h>
 #include <NetworkingConstants.h>
 #include <shaders/Shaders.h>
-#include <StencilMaskPass.h>
 
 #include "ShaderConstants.h"
 #include "Logging.h"
@@ -107,20 +106,23 @@ void ProceduralData::parse(const QJsonObject& proceduralData) {
     channels = proceduralData[CHANNELS_KEY].toArray();
 }
 
+std::function<void(gpu::StatePointer)> Procedural::opaqueStencil = [](gpu::StatePointer state) {};
+std::function<void(gpu::StatePointer)> Procedural::transparentStencil = [](gpu::StatePointer state) {};
+
 Procedural::Procedural() {
     _opaqueState->setCullMode(gpu::State::CULL_BACK);
     _opaqueState->setDepthTest(true, true, gpu::LESS_EQUAL);
     _opaqueState->setBlendFunction(false, gpu::State::SRC_ALPHA, gpu::State::BLEND_OP_ADD,
                                    gpu::State::INV_SRC_ALPHA, gpu::State::FACTOR_ALPHA, gpu::State::BLEND_OP_ADD,
                                    gpu::State::ONE);
-    PrepareStencil::testMaskDrawShape(*_opaqueState);
+    opaqueStencil(_opaqueState);
 
     _transparentState->setCullMode(gpu::State::CULL_BACK);
     _transparentState->setDepthTest(true, true, gpu::LESS_EQUAL);
     _transparentState->setBlendFunction(true, gpu::State::SRC_ALPHA, gpu::State::BLEND_OP_ADD,
                                         gpu::State::INV_SRC_ALPHA, gpu::State::FACTOR_ALPHA,
                                         gpu::State::BLEND_OP_ADD, gpu::State::ONE);
-    PrepareStencil::testMask(*_transparentState);
+    transparentStencil(_transparentState);
 }
 
 Procedural::Procedural(const Procedural& other) {

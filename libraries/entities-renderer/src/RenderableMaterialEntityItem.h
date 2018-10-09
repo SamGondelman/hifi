@@ -23,7 +23,7 @@ class MaterialEntityRenderer : public TypedEntityRenderer<MaterialEntityItem> {
     using Pointer = std::shared_ptr<MaterialEntityRenderer>;
 public:
     MaterialEntityRenderer(const EntityItemPointer& entity) : Parent(entity) {}
-    ~MaterialEntityRenderer() { removeMaterial(); }
+    ~MaterialEntityRenderer() { deleteMaterial(); }
 
 private:
     virtual bool needsRenderUpdate() const override;
@@ -48,7 +48,7 @@ private:
     void setCurrentMaterialName(const std::string& currentMaterialName);
 
     void applyMaterial();
-    void removeMaterial();
+    void deleteMaterial();
 
     ProceduralMaterialResourcePointer _networkMaterial;
     ProceduralMaterialResource::ParsedMaterials _parsedMaterials;

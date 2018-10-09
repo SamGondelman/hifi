@@ -150,7 +150,9 @@
 #include <trackers/EyeTracker.h>
 #include <avatars-renderer/ScriptAvatar.h>
 #include <RenderableEntityItem.h>
+#include <procedural/Procedural.h>
 #include <procedural/ProceduralSkybox.h>
+#include <StencilMaskPass.h>
 
 #include "AudioClient.h"
 #include "audio/AudioScope.h"
@@ -1944,6 +1946,14 @@ Application::Application(int& argc, char** argv, QElapsedTimer& startupTimer, bo
         }
         return false;
     });
+
+    Procedural::opaqueStencil = [](gpu::StatePointer state) {
+        PrepareStencil::testMaskDrawShape(*state);
+    };
+
+    Procedural::transparentStencil = [](gpu::StatePointer state) {
+        PrepareStencil::testMask(*state);
+    };
 
     // Keyboard focus handling for Web overlays.
     auto overlays = &(qApp->getOverlays());
@@ -6432,10 +6442,6 @@ void Application::clearDomainOctreeDetails() {
 
     // reset the model renderer
     getEntities()->clear();
-
-    auto skyStage = DependencyManager::get<SceneScriptingInterface>()->getSkyStage();
-
-    skyStage->setBackgroundMode(graphics::SunSkyStage::SKY_DEFAULT);
 
     DependencyManager::get<AnimationCache>()->clearUnusedResources();
     DependencyManager::get<ModelCache>()->clearUnusedResources();
