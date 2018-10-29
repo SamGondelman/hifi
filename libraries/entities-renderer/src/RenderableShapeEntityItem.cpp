@@ -43,9 +43,7 @@ bool ShapeEntityRenderer::needsRenderUpdate() const {
 }
 
 bool ShapeEntityRenderer::needsRenderUpdateFromTypedEntity(const TypedEntityPointer& entity) const {
-    xColor xColor = entity->getXColor();
-    glm::vec3 color = glm::vec3(xColor.red, xColor.green, xColor.blue) / 255.0f;
-    if (_color != color) {
+    if (_color != entity->getColor()) {
         return true;
     }
 
@@ -70,10 +68,9 @@ bool ShapeEntityRenderer::needsRenderUpdateFromTypedEntity(const TypedEntityPoin
 
 void ShapeEntityRenderer::doRenderUpdateSynchronousTyped(const ScenePointer& scene, Transaction& transaction, const TypedEntityPointer& entity) {
     withWriteLock([&] {
-        xColor xColor = entity->getXColor();
-        glm::vec3 color = glm::vec3(xColor.red, xColor.green, xColor.blue) / 255.0f;
+        glm::u8vec3 color = entity->getColor();
         if (_color != color) {
-            _material->setAlbedo(color);
+            _material->setAlbedo(toGlm(color));
             _color = color;
         }
 

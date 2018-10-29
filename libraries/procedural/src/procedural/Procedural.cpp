@@ -257,13 +257,7 @@ bool Procedural::isReady() const {
     bool vertexShaderLoaded = !_vertexShaderPath.isEmpty() || (_networkVertexShader && _networkVertexShader->isLoaded());
 
     // We need to have at least one shader, and whichever ones we have need to be loaded
-    if (hasFragmentShader && hasVertexShader && (!fragmentShaderLoaded || !vertexShaderLoaded)) {
-        return false;
-    } else if (hasFragmentShader && !fragmentShaderLoaded) {
-        return false;
-    } else if (hasVertexShader && !vertexShaderLoaded) {
-        return false;
-    } else if (!hasFragmentShader && !hasVertexShader) {
+    if ((!hasFragmentShader && !hasVertexShader) || (hasFragmentShader && !fragmentShaderLoaded) || hasVertexShader && !vertexShaderLoaded) {
         return false;
     }
 

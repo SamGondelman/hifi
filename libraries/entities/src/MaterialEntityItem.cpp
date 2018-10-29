@@ -176,3 +176,23 @@ void MaterialEntityItem::setParentMaterialName(const QString& parentMaterialName
         _parentMaterialName = parentMaterialName;
     }
 }
+
+AACube MaterialEntityItem::calculateInitialQueryAACube(bool& success) {
+    AACube aaCube = EntityItem::calculateInitialQueryAACube(success);
+    // A Material entity's queryAACube contains its parent's queryAACube
+    auto parent = getParentPointer(success);
+    if (success && parent) {
+        success = false;
+        AACube parentQueryAACube = parent->calculateInitialQueryAACube(success);
+        if (success) {
+            aaCube += parentQueryAACube.getMinimumPoint();
+            aaCube += parentQueryAACube.getMaximumPoint();
+        }
+    }
+    return aaCube;
+}
+
+void MaterialEntityItem::postParentFixup() {
+    _queryAACubeSet = false; // force an update so we contain our parent
+    updateQueryAACube();
+}

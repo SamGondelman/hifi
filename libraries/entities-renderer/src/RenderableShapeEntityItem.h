@@ -39,7 +39,7 @@ private:
 
     entity::Shape _shape { entity::Sphere };
     graphics::ProceduralMaterialPointer _material;
-    glm::vec3 _color;
+    glm::u8vec3 _color;
     float _alpha;
     QString _proceduralData;
     glm::vec3 _position;

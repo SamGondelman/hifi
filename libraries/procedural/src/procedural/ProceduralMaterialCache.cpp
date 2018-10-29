@@ -115,10 +115,10 @@ ProceduralMaterialResource::ParsedMaterials ProceduralMaterialResource::parseJSO
  * @property {string} model="hifi_pbr" - Different material models support different properties and rendering modes.
  *     Supported models are: "hifi_pbr", "hifi_shader_simple"
  * @property {string} name="" - A name for the material.  Supported by all material models.
- * @property {Vec3Color|RGBS} albedo - The albedo color. A {@link Vec3Color} value is treated as sRGB. A {@link RGBS} value can 
+ * @property Color|RGBS} albedo - The albedo color. A {@link Color} value is treated as sRGB. A {@link RGBS} value can 
  *     be either RGB or sRGB.  Supported by all material models.
  * @property {number} opacity=1.0 - The opacity, <code>0.0</code> &ndash; <code>1.0</code>.  Supported by all material models.
- * @property {Vec3Color|RGBS} emissive - The emissive color, i.e., the color that the material emits. A {@link Vec3Color} value
+ * @property {Color|RGBS} emissive - The emissive color, i.e., the color that the material emits. A {@link Color} value
  *     is treated as sRGB. A {@link RGBS} value can be either RGB or sRGB. "hifi_pbr" model only.
  * @property {boolean} unlit=false - If <code>true</code>, the material is not lit. "hifi_pbr" model only.
  * @property {number} roughness - The roughness, <code>0.0</code> &ndash; <code>1.0</code>.  "hifi_pbr" model only.
