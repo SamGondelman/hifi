@@ -2399,8 +2399,8 @@ OctreeElement::AppendState EntityItemProperties::encodeEntityEditPacket(PacketTy
             }
 
             if (properties.getType() == EntityTypes::Light) {
-                APPEND_ENTITY_PROPERTY(PROP_COLOR, properties.getColor());
                 APPEND_ENTITY_PROPERTY(PROP_IS_SPOTLIGHT, properties.getIsSpotlight());
+                APPEND_ENTITY_PROPERTY(PROP_COLOR, properties.getColor());
                 APPEND_ENTITY_PROPERTY(PROP_INTENSITY, properties.getIntensity());
                 APPEND_ENTITY_PROPERTY(PROP_FALLOFF_RADIUS, properties.getFalloffRadius());
                 APPEND_ENTITY_PROPERTY(PROP_EXPONENT, properties.getExponent());
@@ -3264,15 +3264,68 @@ AABox EntityItemProperties::getAABox() const {
     return AABox(rotatedExtentsRelativeToRegistrationPoint);
 }
 
-bool EntityItemProperties::hasTerseUpdateChanges() const {
-    // a TerseUpdate includes the transform and its derivatives
-    return _positionChanged || _velocityChanged || _rotationChanged || _angularVelocityChanged || _accelerationChanged;
+bool EntityItemProperties::hasTransformOrVelocityChanges() const {
+    return _positionChanged ||_localPositionChanged
+        || _rotationChanged || _localRotationChanged
+        || _velocityChanged || _localVelocityChanged
+        || _angularVelocityChanged || _localAngularVelocityChanged
+        || _accelerationChanged;
 }
 
 bool EntityItemProperties::hasMiscPhysicsChanges() const {
     return _gravityChanged || _dimensionsChanged || _densityChanged || _frictionChanged
         || _restitutionChanged || _dampingChanged || _angularDampingChanged || _registrationPointChanged ||
         _compoundShapeURLChanged || _dynamicChanged || _collisionlessChanged || _collisionMaskChanged;
+}
+
+bool EntityItemProperties::hasSimulationRestrictedChanges() const {
+    return _positionChanged || _localPositionChanged
+        || _rotationChanged || _localRotationChanged
+        || _velocityChanged || _localVelocityChanged
+        || _angularVelocityChanged || _localAngularVelocityChanged
+        || _accelerationChanged
+        || _parentIDChanged || _parentJointIndexChanged;
+}
+
+void EntityItemProperties::copySimulationRestrictedProperties(const EntityItemPointer& entity) {
+    if (!_parentIDChanged) {
+        setParentID(entity->getParentID());
+    }
+    if (!_parentJointIndexChanged) {
+        setParentJointIndex(entity->getParentJointIndex());
+    }
+    if (!_localPositionChanged && !_positionChanged) {
+        setPosition(entity->getWorldPosition());
+    }
+    if (!_localRotationChanged && !_rotationChanged) {
+        setRotation(entity->getWorldOrientation());
+    }
+    if (!_localVelocityChanged && !_velocityChanged) {
+        setVelocity(entity->getWorldVelocity());
+    }
+    if (!_localAngularVelocityChanged && !_angularVelocityChanged) {
+        setAngularVelocity(entity->getWorldAngularVelocity());
+    }
+    if (!_accelerationChanged) {
+        setAcceleration(entity->getAcceleration());
+    }
+    if (!_localDimensionsChanged && !_dimensionsChanged) {
+        setDimensions(entity->getScaledDimensions());
+    }
+}
+
+void EntityItemProperties::clearSimulationRestrictedProperties() {
+    _positionChanged = false;
+    _localPositionChanged = false;
+    _rotationChanged = false;
+    _localRotationChanged = false;
+    _velocityChanged = false;
+    _localVelocityChanged = false;
+    _angularVelocityChanged = false;
+    _localAngularVelocityChanged = false;
+    _accelerationChanged = false;
+    _parentIDChanged = false;
+    _parentJointIndexChanged = false;
 }
 
 void EntityItemProperties::clearSimulationOwner() {
@@ -3291,6 +3344,20 @@ void EntityItemProperties::setSimulationOwner(const QByteArray& data) {
     if (_simulationOwner.fromByteArray(data)) {
         _simulationOwnerChanged = true;
     }
+}
+
+uint8_t EntityItemProperties::computeSimulationBidPriority() const {
+    uint8_t priority = 0;
+    if (_parentIDChanged || _parentJointIndexChanged) {
+        // we need higher simulation ownership priority to chang parenting info
+        priority = SCRIPT_GRAB_SIMULATION_PRIORITY;
+    } else if ( _positionChanged || _localPositionChanged
+            || _rotationChanged || _localRotationChanged
+            || _velocityChanged || _localVelocityChanged
+            || _angularVelocityChanged || _localAngularVelocityChanged) {
+        priority = SCRIPT_POKE_SIMULATION_PRIORITY;
+    }
+    return priority;
 }
 
 QList<QString> EntityItemProperties::listChangedProperties() {
@@ -3757,6 +3824,16 @@ bool EntityItemProperties::parentRelatedPropertyChanged() const {
 
 bool EntityItemProperties::queryAACubeRelatedPropertyChanged() const {
     return parentRelatedPropertyChanged() || dimensionsChanged();
+}
+
+bool EntityItemProperties::grabbingRelatedPropertyChanged() const {
+    const GrabPropertyGroup& grabProperties = getGrab();
+    return grabProperties.triggerableChanged() || grabProperties.grabbableChanged() ||
+        grabProperties.grabFollowsControllerChanged() || grabProperties.grabKinematicChanged() ||
+        grabProperties.equippableChanged() || grabProperties.equippableLeftPositionChanged() ||
+        grabProperties.equippableRightPositionChanged() || grabProperties.equippableLeftRotationChanged() ||
+        grabProperties.equippableRightRotationChanged() || grabProperties.equippableIndicatorURLChanged() ||
+        grabProperties.equippableIndicatorScaleChanged() || grabProperties.equippableIndicatorOffsetChanged();
 }
 
 // Checking Certifiable Properties

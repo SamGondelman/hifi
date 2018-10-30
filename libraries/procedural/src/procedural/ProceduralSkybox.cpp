@@ -17,8 +17,9 @@
 #include <shaders/Shaders.h>
 
 ProceduralSkybox::ProceduralSkybox() : graphics::Skybox() {
-    _procedural._vertexSource = gpu::Shader::getVertexShaderSource(shader::graphics::vertex::skybox);
-    _procedural._opaqueFragmentSource = gpu::Shader::getFragmentShaderSource(shader::procedural::fragment::proceduralSkybox);
+    _procedural._vertexSource = shader::Source::get(shader::graphics::vertex::skybox);
+    _procedural._opaqueFragmentSource = shader::Source::get(shader::procedural::fragment::proceduralSkybox);
+
     _procedural.setDoesFade(false);
     // Adjust the pipeline state for background using the stencil test
     // Must match PrepareStencil::STENCIL_BACKGROUND

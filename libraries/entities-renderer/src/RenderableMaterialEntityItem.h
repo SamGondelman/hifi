@@ -43,6 +43,8 @@ private:
     QString _parentMaterialName;
     QString _materialData;
 
+    bool _texturesLoaded { false };
+
     graphics::ProceduralMaterialPointer getMaterial() const;
     void setMaterialURL(const QString& materialURLString, bool materialDataChanged = false);
     void setCurrentMaterialName(const std::string& currentMaterialName);

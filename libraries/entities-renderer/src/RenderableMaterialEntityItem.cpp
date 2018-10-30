@@ -40,6 +40,9 @@ bool MaterialEntityRenderer::needsRenderUpdateFromTypedEntity(const TypedEntityP
     if (entity->getMaterialData() != _materialData) {
         return true;
     }
+    if (!_texturesLoaded) {
+        return true;
+    }
     return false;
 }
 
@@ -47,6 +50,7 @@ void MaterialEntityRenderer::doRenderUpdateSynchronousTyped(const ScenePointer& 
     withWriteLock([&] {
         bool materialNeedsUpdate = false;
         if (entity->getMaterialURL() != _materialURL) {
+            _texturesLoaded = false;
             if (!materialNeedsUpdate) {
                 deleteMaterial();
             }
@@ -89,6 +93,7 @@ void MaterialEntityRenderer::doRenderUpdateSynchronousTyped(const ScenePointer& 
             _parentMaterialName = entity->getParentMaterialName();
         }
         if (entity->getMaterialData() != _materialData) {
+            _texturesLoaded = false;
             if (!materialNeedsUpdate) {
                 deleteMaterial();
             }
@@ -111,6 +116,13 @@ void MaterialEntityRenderer::doRenderUpdateSynchronousTyped(const ScenePointer& 
         const float MATERIAL_ENTITY_SCALE = 0.5f;
         _renderTransform.postScale(MATERIAL_ENTITY_SCALE);
         _renderTransform.postScale(ENTITY_ITEM_DEFAULT_DIMENSIONS);
+
+        auto material = getMaterial();
+        bool newTexturesLoaded = material ? !material->isMissingTexture() : false;
+        if (!_texturesLoaded && newTexturesLoaded) {
+            material->checkResetOpacityMap();
+        }
+        _texturesLoaded = newTexturesLoaded;
     });
 }
 

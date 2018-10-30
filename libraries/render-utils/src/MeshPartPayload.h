@@ -28,10 +28,9 @@ class Model;
 
 class MeshPartPayload {
 public:
-
-    MeshPartPayload() {}
+    MeshPartPayload() = default;
     MeshPartPayload(const std::shared_ptr<const graphics::Mesh>& mesh, int partIndex, graphics::ProceduralMaterialPointer material);
-    virtual ~MeshPartPayload() {}
+    virtual ~MeshPartPayload() = default;
 
     typedef render::Payload<MeshPartPayload> Payload;
     typedef Payload::DataPointer Pointer;
@@ -136,10 +135,13 @@ public:
     bool _isBlendShaped { false };
     bool _hasTangents { false };
 
+    void setBlendshapeBuffer(const std::unordered_map<int, gpu::BufferPointer>& blendshapeBuffers, const QVector<int>& blendedMeshSizes);
+
 private:
     void initCache(const ModelPointer& model);
 
-    gpu::BufferPointer _blendshapeBuffer;
+    gpu::BufferPointer _meshBlendshapeBuffer;
+    int _meshNumVertices;
     render::ShapeKey _shapeKey { render::ShapeKey::Builder::invalid() };
 };
 

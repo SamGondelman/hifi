@@ -38,12 +38,6 @@ layout(location=RENDER_UTILS_ATTR_POSITION_ES) in vec4 _positionES;
 
 layout(location=0) out vec4 _fragColor0;
 
-<@include procedural/ProceduralCommon.slh@>
-
-#line 1001
-//PROCEDURAL_BLOCK
-
-#line 2030
 void main(void) {
     vec3 normal = normalize(_normalWS.xyz);
     vec3 diffuse = _color.rgb;

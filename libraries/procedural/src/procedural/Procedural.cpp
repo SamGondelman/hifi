@@ -123,6 +123,8 @@ Procedural::Procedural() {
                                         gpu::State::INV_SRC_ALPHA, gpu::State::FACTOR_ALPHA,
                                         gpu::State::BLEND_OP_ADD, gpu::State::ONE);
     transparentStencil(_transparentState);
+
+    _standardInputsBuffer = std::make_shared<gpu::Buffer>(sizeof(StandardInputs), nullptr);
 }
 
 Procedural::Procedural(const Procedural& other) {
@@ -152,7 +154,7 @@ void Procedural::setProceduralData(const ProceduralData& proceduralData) {
 
     _enabled = false;
 
-    if (proceduralData.version != _data.version ) {
+    if (proceduralData.version != _data.version) {
         _data.version = proceduralData.version;
         _shaderDirty = true;
     }
@@ -181,7 +183,6 @@ void Procedural::setProceduralData(const ProceduralData& proceduralData) {
                 _channels[channel] = textureCache->getTexture(QUrl());
             }
         }
-        _channelsDirty = true;
     }
 
     if (proceduralData.fragmentShaderUrl != _data.fragmentShaderUrl) {
@@ -257,7 +258,7 @@ bool Procedural::isReady() const {
     bool vertexShaderLoaded = !_vertexShaderPath.isEmpty() || (_networkVertexShader && _networkVertexShader->isLoaded());
 
     // We need to have at least one shader, and whichever ones we have need to be loaded
-    if ((!hasFragmentShader && !hasVertexShader) || (hasFragmentShader && !fragmentShaderLoaded) || hasVertexShader && !vertexShaderLoaded) {
+    if ((!hasFragmentShader && !hasVertexShader) || (hasFragmentShader && !fragmentShaderLoaded) || (hasVertexShader && !vertexShaderLoaded)) {
         return false;
     }
 
@@ -276,31 +277,13 @@ bool Procedural::isReady() const {
     return true;
 }
 
-std::string Procedural::replaceProceduralBlock(const std::string& shaderString, const QString& shaderSource) {
-    std::string result = shaderString;
-    auto replaceIndex = result.find(PROCEDURAL_VERSION);
-    if (replaceIndex != std::string::npos) {
-        if (_data.version == 1) {
-            result.replace(replaceIndex, PROCEDURAL_VERSION.size(), "#define PROCEDURAL_V1 1");
-        } else if (_data.version == 2) {
-            result.replace(replaceIndex, PROCEDURAL_VERSION.size(), "#define PROCEDURAL_V2 1");
-        } else if (_data.version == 3) {
-            result.replace(replaceIndex, PROCEDURAL_VERSION.size(), "#define PROCEDURAL_V3 1");
-        }
-    }
-    replaceIndex = result.find(PROCEDURAL_BLOCK);
-    if (replaceIndex != std::string::npos) {
-        result.replace(replaceIndex, PROCEDURAL_BLOCK.size(), shaderSource.toLocal8Bit().data());
-    }
-    return result;
-}
-
 void Procedural::prepare(gpu::Batch& batch,
                          const glm::vec3& position,
                          const glm::vec3& size,
                          const glm::quat& orientation,
                          const ProceduralProgramKey key) {
     std::lock_guard<std::mutex> lock(_lock);
+
     _entityDimensions = size;
     _entityPosition = position;
     _entityOrientation = glm::mat3_cast(orientation);
@@ -342,50 +325,49 @@ void Procedural::prepare(gpu::Batch& batch,
             vertexSource = _vertexSource;
         }
 
-        gpu::Shader::Source fragmentSource = key.isTransparent() ? _transparentFragmentSource : _opaqueFragmentSource;
-
-        std::string vertexShaderSource = _vertexShaderSource.isEmpty() ? vertexSource.getCode() : replaceProceduralBlock(vertexSource.getCode(), _vertexShaderSource);
-        std::string fragmentShaderSource = _fragmentShaderSource.isEmpty() ? fragmentSource.getCode() : replaceProceduralBlock(fragmentSource.getCode(), _fragmentShaderSource);
-        gpu::ShaderPointer vertexShader;
-        gpu::ShaderPointer fragmentShader;
-        // Set any userdata specified uniforms
-        { // Vertex shader reflection
-            auto reflection = vertexSource.getReflection();
-            auto& uniforms = reflection[gpu::Shader::BindingType::UNIFORM];
-
-            // If a uniform is used by both the vertex and fragment shaders, it should have the same location
-            int customSlot = procedural::slot::uniform::Custom;
-            for (const auto& key : _data.uniforms.keys()) {
-                std::string uniformName = key.toLocal8Bit().data();
-                uniforms[uniformName] = customSlot;
-                ++customSlot;
-            }
-
-            vertexShader = gpu::Shader::createVertex({ vertexShaderSource, reflection });
+        gpu::Shader::Source fragmentSource;
+        if (key.isTransparent()) {
+            fragmentSource = _transparentFragmentSource;
+        } else {
+            fragmentSource = _opaqueFragmentSource;
         }
-        { // Fragment shader reflection
-            auto reflection = fragmentSource.getReflection();
-            auto& uniforms = reflection[gpu::Shader::BindingType::UNIFORM];
 
-            // If a uniform is used by both the vertex and fragment shaders, it should have the same location
-            int customSlot = procedural::slot::uniform::Custom;
-            for (const auto& key : _data.uniforms.keys()) {
-                std::string uniformName = key.toLocal8Bit().data();
-                uniforms[uniformName] = customSlot;
-                ++customSlot;
-            }
+        // Build the fragment shader
+        vertexSource.replacements.clear();
+        fragmentSource.replacements.clear();
+        if (_data.version == 1) {
+            vertexSource.replacements[PROCEDURAL_VERSION] = "#define PROCEDURAL_V1 1";
+            fragmentSource.replacements[PROCEDURAL_VERSION] = "#define PROCEDURAL_V1 1";
+        } else if (_data.version == 2) {
+            vertexSource.replacements[PROCEDURAL_VERSION] = "#define PROCEDURAL_V2 1";
+            fragmentSource.replacements[PROCEDURAL_VERSION] = "#define PROCEDURAL_V2 1";
+        } else if (_data.version == 3) {
+            vertexSource.replacements[PROCEDURAL_VERSION] = "#define PROCEDURAL_V3 1";
+            fragmentSource.replacements[PROCEDURAL_VERSION] = "#define PROCEDURAL_V3 1";
+        }
+        vertexSource.replacements[PROCEDURAL_BLOCK] = _vertexShaderSource.toStdString();
+        fragmentSource.replacements[PROCEDURAL_BLOCK] = _fragmentShaderSource.toStdString();
 
-            fragmentShader = gpu::Shader::createPixel({ fragmentShaderSource, reflection });
+        // Set any userdata specified uniforms
+        int customSlot = procedural::slot::uniform::Custom;
+        for (const auto& key : _data.uniforms.keys()) {
+            std::string uniformName = key.toLocal8Bit().data();
+            vertexSource.reflection.uniforms[uniformName] = customSlot;
+            fragmentSource.reflection.uniforms[uniformName] = customSlot;
+            ++customSlot;
         }
 
         // Leave this here for debugging
-        //qCDebug(proceduralLog) << "VertexShader:\n" << vertexShaderSource.c_str();
-        //qCDebug(proceduralLog) << "FragmentShader:\n" << fragmentShaderSource.c_str();
+        //qCDebug(proceduralLog) << "VertexShader:\n" << vertexSource.getSource(shader::Dialect::glsl450, shader::Variant::Mono).c_str();
+        //qCDebug(proceduralLog) << "FragmnetShader:\n" << fragmentSource.getSource(shader::Dialect::glsl450, shader::Variant::Mono).c_str();
 
+        gpu::ShaderPointer vertexShader = gpu::Shader::createVertex(vertexSource);
+        gpu::ShaderPointer fragmentShader = gpu::Shader::createPixel(fragmentSource);
         gpu::ShaderPointer program = gpu::Shader::createProgram(vertexShader, fragmentShader);
 
         _proceduralPrograms[key] = program;
         _proceduralPipelines[key] = gpu::Pipeline::create(program, key.isTransparent() ? _transparentState : _opaqueState);
+
         _start = usecTimestampNow();
         _frameCount = 0;
         recompiledShader = true;
@@ -395,15 +377,11 @@ void Procedural::prepare(gpu::Batch& batch,
 
     bool recreateUniforms = _shaderDirty || _uniformsDirty || recompiledShader || _prevKey != key;
     if (recreateUniforms) {
-        setupUniforms(key);
-    }
-
-    if (recreateUniforms || _channelsDirty) {
-        setupChannels(recreateUniforms, key);
+        setupUniforms();
     }
 
     _prevKey = key;
-    _shaderDirty = _uniformsDirty = _channelsDirty = false;
+    _shaderDirty = _uniformsDirty = false;
 
     for (auto lambda : _uniforms) {
         lambda(batch);
@@ -428,18 +406,12 @@ void Procedural::prepare(gpu::Batch& batch,
     }
 }
 
-void Procedural::setupUniforms(ProceduralProgramKey key) {
+void Procedural::setupUniforms() {
     _uniforms.clear();
-    auto& program = _proceduralPrograms[key];
-    const auto& uniformSlots = program->getUniforms();
     auto customUniformCount = _data.uniforms.keys().size();
-
     // Set any userdata specified uniforms
     for (int i = 0; i < customUniformCount; ++i) {
         int slot = procedural::slot::uniform::Custom + i;
-        if (!uniformSlots.isValid(slot)) {
-            continue;
-        }
         QString key = _data.uniforms.keys().at(i);
         std::string uniformName = key.toLocal8Bit().data();
         QJsonValue value = _data.uniforms[key];
@@ -489,71 +461,41 @@ void Procedural::setupUniforms(ProceduralProgramKey key) {
         }
     }
 
-    if (uniformSlots.isValid(procedural::slot::uniform::Time)) {
-        _uniforms.push_back([this](gpu::Batch& batch) {
-            // Minimize floating point error by doing an integer division to milliseconds, before the floating point division to seconds
-            float time = (float)((usecTimestampNow() - _start) / USECS_PER_MSEC) / MSECS_PER_SECOND;
-            batch._glUniform(procedural::slot::uniform::Time, time);
-        });
-    }
+    _uniforms.push_back([=](gpu::Batch& batch) {
+        _standardInputs.position = vec4(_entityPosition, 1.0f);
+        // Minimize floating point error by doing an integer division to milliseconds, before the floating point division to seconds
+        _standardInputs.time = (float)((usecTimestampNow() - _start) / USECS_PER_MSEC) / MSECS_PER_SECOND;
 
-    if (uniformSlots.isValid(procedural::slot::uniform::Date)) {
-        _uniforms.push_back([](gpu::Batch& batch) {
+        // Date
+        {
             QDateTime now = QDateTime::currentDateTimeUtc();
             QDate date = now.date();
             QTime time = now.time();
-            vec4 v;
-            v.x = date.year();
+            _standardInputs.date.x = date.year();
             // Shadertoy month is 0 based
-            v.y = date.month() - 1;
+            _standardInputs.date.y = date.month() - 1;
             // But not the day... go figure
-            v.z = date.day();
+            _standardInputs.date.z = date.day();
             float fractSeconds = (time.msec() / 1000.0f);
-            v.w = (time.hour() * 3600) + (time.minute() * 60) + time.second() + fractSeconds;
-            batch._glUniform(procedural::slot::uniform::Date, v);
-        });
-    }
 
-    if (uniformSlots.isValid(procedural::slot::uniform::FrameCount)) {
-        _uniforms.push_back([this](gpu::Batch& batch) { batch._glUniform(procedural::slot::uniform::FrameCount, ++_frameCount); });
-    }
-
-    if (uniformSlots.isValid(procedural::slot::uniform::Scale)) {
-        // FIXME move into the 'set once' section, since this doesn't change over time
-        _uniforms.push_back([this](gpu::Batch& batch) { batch._glUniform(procedural::slot::uniform::Scale, _entityDimensions); });
-    }
-
-    if (uniformSlots.isValid(procedural::slot::uniform::Orientation)) {
-        // FIXME move into the 'set once' section, since this doesn't change over time
-        _uniforms.push_back([this](gpu::Batch& batch) { batch._glUniform(procedural::slot::uniform::Orientation, _entityOrientation); });
-    }
-
-    if (uniformSlots.isValid(procedural::slot::uniform::Position)) {
-        // FIXME move into the 'set once' section, since this doesn't change over time
-        _uniforms.push_back([this](gpu::Batch& batch) { batch._glUniform(procedural::slot::uniform::Position, _entityPosition); });
-    }
-}
-
-void Procedural::setupChannels(bool shouldCreate, ProceduralProgramKey key) {
-    auto& program = _proceduralPrograms[key];
-    const auto& uniformSlots = program->getUniforms();
-
-    if (uniformSlots.isValid(procedural::slot::uniform::ChannelResolution)) {
-        if (!shouldCreate) {
-            // Instead of adding new elements, remove the old one and recreate it
-            _uniforms.pop_back();
+            _standardInputs.date.w = (time.hour() * 3600) + (time.minute() * 60) + time.second() + fractSeconds;
         }
-        _uniforms.push_back([this](gpu::Batch& batch) {
-            vec3 channelSizes[MAX_PROCEDURAL_TEXTURE_CHANNELS];
-            for (size_t i = 0; i < MAX_PROCEDURAL_TEXTURE_CHANNELS; ++i) {
-                if (_channels[i]) {
-                    channelSizes[i] = vec3(_channels[i]->getWidth(), _channels[i]->getHeight(), 1.0);
-                }
+
+        _standardInputs.scale = vec4(_entityDimensions, 1.0f);
+        _standardInputs.frameCount = ++_frameCount;
+        _standardInputs.orientation = mat4(_entityOrientation);
+
+        for (size_t i = 0; i < MAX_PROCEDURAL_TEXTURE_CHANNELS; ++i) {
+            if (_channels[i]) {
+                _standardInputs.resolution[i] = vec4(_channels[i]->getWidth(), _channels[i]->getHeight(), 1.0f, 1.0f);
+            } else {
+                _standardInputs.resolution[i] = vec4(1.0f);
             }
-            batch._glUniform3fv(procedural::slot::uniform::ChannelResolution, MAX_PROCEDURAL_TEXTURE_CHANNELS,
-                                &channelSizes[0].x);
-        });
-    }
+        }
+
+        _standardInputsBuffer->setSubData(0, _standardInputs);
+        batch.setUniformBuffer(0, _standardInputsBuffer, 0, sizeof(StandardInputs));
+    });
 }
 
 glm::vec4 Procedural::getColor(const glm::vec4& entityColor) const {

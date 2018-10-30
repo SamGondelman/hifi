@@ -136,6 +136,29 @@ public:
     static std::function<void(gpu::StatePointer)> transparentStencil;
 
 protected:
+    // DO NOT TOUCH
+    // We have to pack these in a particular way to match the ProceduralCommon.slh
+    // layout.  
+    struct StandardInputs {
+        vec4 date;
+        vec4 position; 
+        vec4 scale;
+        float time;
+        int frameCount;
+        vec2 _spare1;
+        vec4 resolution[4];
+        mat4 orientation;
+    };
+
+    static_assert(0 == offsetof(StandardInputs, date), "ProceduralOffsets");
+    static_assert(16 == offsetof(StandardInputs, position), "ProceduralOffsets");
+    static_assert(32 == offsetof(StandardInputs, scale), "ProceduralOffsets");
+    static_assert(48 == offsetof(StandardInputs, time), "ProceduralOffsets");
+    static_assert(52 == offsetof(StandardInputs, frameCount), "ProceduralOffsets");
+    static_assert(56 == offsetof(StandardInputs, _spare1), "ProceduralOffsets");
+    static_assert(64 == offsetof(StandardInputs, resolution), "ProceduralOffsets");
+    static_assert(128 == offsetof(StandardInputs, orientation), "ProceduralOffsets");
+
     // Procedural metadata
     ProceduralData _data;
 
@@ -154,7 +177,6 @@ protected:
     NetworkShaderPointer _networkFragmentShader;
     bool _shaderDirty { true };
     bool _uniformsDirty { true };
-    bool _channelsDirty { true };
 
     // Rendering objects
     UniformLambdas _uniforms;
@@ -163,6 +185,9 @@ protected:
     QHash<ProceduralProgramKey, gpu::ShaderPointer> _proceduralPrograms;
     QHash<ProceduralProgramKey, gpu::PipelinePointer> _proceduralPipelines;
 
+    StandardInputs _standardInputs;
+    gpu::BufferPointer _standardInputsBuffer;
+
     // Entity metadata
     glm::vec3 _entityDimensions;
     glm::vec3 _entityPosition;
@@ -170,10 +195,7 @@ protected:
 
 private:
     // This should only be called from the render thread, as it shares data with Procedural::prepare
-    void setupUniforms(ProceduralProgramKey key);
-    void setupChannels(bool shouldCreate, ProceduralProgramKey key);
-
-    std::string replaceProceduralBlock(const std::string& shaderString, const QString& shaderSource);
+    void setupUniforms();
 
     mutable quint64 _fadeStartTime { 0 };
     mutable bool _hasStartedFade { false };

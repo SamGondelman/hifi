@@ -245,6 +245,7 @@ enum class EntityVersion : PacketVersion {
     BloomEffect,
     GrabProperties,
     ScriptGlmVectors,
+    FixedLightSerialization,
     ProceduralData
 };
 
