@@ -46,6 +46,10 @@ float getProceduralColors(inout vec3 diffuse, inout vec3 specular, inout float s
     return 1.0;
 }
 
+float getProceduralFragment(inout ProceduralFragmentData proceduralData) {
+    return 1.0;
+}
+
 //PROCEDURAL_BLOCK_END
 
 #line 2030
@@ -78,7 +82,7 @@ void main(void) {
         DEFAULT_OCCLUSION,
         DEFAULT_SCATTERING
     };
-    emissiveAmount = getProceduralColors(proceduralData);
+    emissiveAmount = getProceduralFragment(proceduralData);
     if (emissiveAmount > 0.0) {
         packDeferredFragmentLightmap(
             proceduralData.normal,

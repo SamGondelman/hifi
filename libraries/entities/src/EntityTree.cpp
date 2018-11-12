@@ -2773,10 +2773,10 @@ bool EntityTree::readFromMap(QVariantMap& map) {
             if (!proceduralEntity.isNull()) {
                 proceduralData = proceduralEntity.toObject();
                 userData.remove(PROCEDURAL_USER_DATA_KEY);
-            }
 
-            properties.setProceduralData(QJsonDocument(proceduralData).toJson());
-            properties.setUserData(QJsonDocument(userData).toJson());
+                properties.setProceduralData(QJsonDocument(proceduralData).toJson());
+                properties.setUserData(QJsonDocument(userData).toJson());
+            }
         }
 
         EntityItemPointer entity = addEntity(entityItemID, properties);

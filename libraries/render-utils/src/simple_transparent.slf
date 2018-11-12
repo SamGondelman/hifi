@@ -41,7 +41,6 @@ layout(location=0) out vec4 _fragColor0;
 <@include procedural/ProceduralCommon.slh@>
 
 #line 1001
-
 //PROCEDURAL_BLOCK_BEGIN
 
 vec3 getProceduralColor() {
@@ -49,6 +48,10 @@ vec3 getProceduralColor() {
 }
 
 float getProceduralColors(inout vec3 diffuse, inout vec3 specular, inout float shininess) {
+    return 1.0;
+}
+
+float getProceduralFragment(inout ProceduralFragmentData proceduralData) {
     return 1.0;
 }
 
@@ -84,7 +87,7 @@ void main(void) {
         DEFAULT_OCCLUSION,
         DEFAULT_SCATTERING
     };
-    emissiveAmount = getProceduralColors(proceduralData);
+    emissiveAmount = getProceduralFragment(proceduralData);
     position = vec4(proceduralData.position, 1.0);
     vec4 posEye = cam._view * position;
     if (emissiveAmount > 0.0) {

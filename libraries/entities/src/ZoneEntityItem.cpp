@@ -64,10 +64,10 @@ EntityItemProperties ZoneEntityItem::getProperties(const EntityPropertyFlags& de
     COPY_ENTITY_PROPERTY_TO_PROPERTIES(ghostingAllowed, getGhostingAllowed);
     COPY_ENTITY_PROPERTY_TO_PROPERTIES(filterURL, getFilterURL);
 
-    COPY_ENTITY_PROPERTY_TO_PROPERTIES(hazeMode, getHazeMode);
     COPY_ENTITY_PROPERTY_TO_PROPERTIES(keyLightMode, getKeyLightMode);
     COPY_ENTITY_PROPERTY_TO_PROPERTIES(ambientLightMode, getAmbientLightMode);
     COPY_ENTITY_PROPERTY_TO_PROPERTIES(skyboxMode, getSkyboxMode);
+    COPY_ENTITY_PROPERTY_TO_PROPERTIES(hazeMode, getHazeMode);
     COPY_ENTITY_PROPERTY_TO_PROPERTIES(bloomMode, getBloomMode);
 
     COPY_ENTITY_PROPERTY_TO_PROPERTIES(proceduralData, getProceduralData);
@@ -112,10 +112,10 @@ bool ZoneEntityItem::setSubClassProperties(const EntityItemProperties& propertie
     SET_ENTITY_PROPERTY_FROM_PROPERTIES(ghostingAllowed, setGhostingAllowed);
     SET_ENTITY_PROPERTY_FROM_PROPERTIES(filterURL, setFilterURL);
 
-    SET_ENTITY_PROPERTY_FROM_PROPERTIES(hazeMode, setHazeMode);
     SET_ENTITY_PROPERTY_FROM_PROPERTIES(keyLightMode, setKeyLightMode);
     SET_ENTITY_PROPERTY_FROM_PROPERTIES(ambientLightMode, setAmbientLightMode);
     SET_ENTITY_PROPERTY_FROM_PROPERTIES(skyboxMode, setSkyboxMode);
+    SET_ENTITY_PROPERTY_FROM_PROPERTIES(hazeMode, setHazeMode);
     SET_ENTITY_PROPERTY_FROM_PROPERTIES(bloomMode, setBloomMode);
 
     SET_ENTITY_PROPERTY_FROM_PROPERTIES(proceduralData, setProceduralData);
@@ -189,10 +189,10 @@ int ZoneEntityItem::readEntitySubclassDataFromBuffer(const unsigned char* data, 
     READ_ENTITY_PROPERTY(PROP_GHOSTING_ALLOWED, bool, setGhostingAllowed);
     READ_ENTITY_PROPERTY(PROP_FILTER_URL, QString, setFilterURL);
 
-    READ_ENTITY_PROPERTY(PROP_HAZE_MODE, uint32_t, setHazeMode);
     READ_ENTITY_PROPERTY(PROP_KEY_LIGHT_MODE, uint32_t, setKeyLightMode);
     READ_ENTITY_PROPERTY(PROP_AMBIENT_LIGHT_MODE, uint32_t, setAmbientLightMode);
     READ_ENTITY_PROPERTY(PROP_SKYBOX_MODE, uint32_t, setSkyboxMode);
+    READ_ENTITY_PROPERTY(PROP_HAZE_MODE, uint32_t, setHazeMode);
     READ_ENTITY_PROPERTY(PROP_BLOOM_MODE, uint32_t, setBloomMode);
 
     READ_ENTITY_PROPERTY(PROP_PROCEDURAL_DATA, QString, setProceduralData);
@@ -218,10 +218,10 @@ EntityPropertyFlags ZoneEntityItem::getEntityProperties(EncodeBitstreamParams& p
     requestedProperties += PROP_GHOSTING_ALLOWED;
     requestedProperties += PROP_FILTER_URL;
 
-    requestedProperties += PROP_HAZE_MODE;
     requestedProperties += PROP_KEY_LIGHT_MODE;
     requestedProperties += PROP_AMBIENT_LIGHT_MODE;
     requestedProperties += PROP_SKYBOX_MODE;
+    requestedProperties += PROP_HAZE_MODE;
     requestedProperties += PROP_BLOOM_MODE;
 
     requestedProperties += PROP_PROCEDURAL_DATA;
@@ -257,10 +257,10 @@ void ZoneEntityItem::appendSubclassData(OctreePacketData* packetData, EncodeBits
     APPEND_ENTITY_PROPERTY(PROP_GHOSTING_ALLOWED, getGhostingAllowed());
     APPEND_ENTITY_PROPERTY(PROP_FILTER_URL, getFilterURL());
 
-    APPEND_ENTITY_PROPERTY(PROP_HAZE_MODE, (uint32_t)getHazeMode());
     APPEND_ENTITY_PROPERTY(PROP_KEY_LIGHT_MODE, (uint32_t)getKeyLightMode());
     APPEND_ENTITY_PROPERTY(PROP_AMBIENT_LIGHT_MODE, (uint32_t)getAmbientLightMode());
     APPEND_ENTITY_PROPERTY(PROP_SKYBOX_MODE, (uint32_t)getSkyboxMode());
+    APPEND_ENTITY_PROPERTY(PROP_HAZE_MODE, (uint32_t)getHazeMode());
     APPEND_ENTITY_PROPERTY(PROP_BLOOM_MODE, (uint32_t)getBloomMode());
 
     APPEND_ENTITY_PROPERTY(PROP_PROCEDURAL_DATA, getProceduralData());
@@ -272,11 +272,11 @@ void ZoneEntityItem::debugDump() const {
     qCDebug(entities) << "            position:" << debugTreeVector(getWorldPosition());
     qCDebug(entities) << "          dimensions:" << debugTreeVector(getScaledDimensions());
     qCDebug(entities) << "       getLastEdited:" << debugTime(getLastEdited(), now);
-    qCDebug(entities) << "           _hazeMode:" << EntityItemProperties::getComponentModeString(_hazeMode);
-    qCDebug(entities) << "       _keyLightMode:" << EntityItemProperties::getComponentModeString(_keyLightMode);
-    qCDebug(entities) << "   _ambientLightMode:" << EntityItemProperties::getComponentModeString(_ambientLightMode);
-    qCDebug(entities) << "         _skyboxMode:" << EntityItemProperties::getComponentModeString(_skyboxMode);
-    qCDebug(entities) << "          _bloomMode:" << EntityItemProperties::getComponentModeString(_bloomMode);
+    qCDebug(entities) << "           _hazeMode:" << EntityItemProperties::getComponentModeAsString(_hazeMode);
+    qCDebug(entities) << "       _keyLightMode:" << EntityItemProperties::getComponentModeAsString(_keyLightMode);
+    qCDebug(entities) << "   _ambientLightMode:" << EntityItemProperties::getComponentModeAsString(_ambientLightMode);
+    qCDebug(entities) << "         _skyboxMode:" << EntityItemProperties::getComponentModeAsString(_skyboxMode);
+    qCDebug(entities) << "          _bloomMode:" << EntityItemProperties::getComponentModeAsString(_bloomMode);
 
     _keyLightProperties.debugDump();
     _ambientLightProperties.debugDump();

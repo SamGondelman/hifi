@@ -36,8 +36,28 @@ layout(location=RENDER_UTILS_ATTR_POSITION_ES) in vec4 _positionES;
 #define _position    _positionMS
 #define _eyePosition _positionES
 
+<@include procedural/ProceduralCommon.slh@>
+
+#line 1001
+//PROCEDURAL_BLOCK_BEGIN
+
+vec3 getProceduralColor() {
+    return _color.rgb;
+}
+
+float getProceduralColors(inout vec3 diffuse, inout vec3 specular, inout float shininess) {
+    return 1.0;
+}
+
+float getProceduralFragment(inout ProceduralFragmentData proceduralData) {
+    return 1.0;
+}
+
+//PROCEDURAL_BLOCK_END
+
 layout(location=0) out vec4 _fragColor0;
 
+#line 2030
 void main(void) {
     vec3 normal = normalize(_normalWS.xyz);
     vec3 diffuse = _color.rgb;
@@ -67,7 +87,7 @@ void main(void) {
         DEFAULT_OCCLUSION,
         DEFAULT_SCATTERING
     };
-    emissiveAmount = getProceduralColors(proceduralData);
+    emissiveAmount = getProceduralFragment(proceduralData);
     position = vec4(proceduralData.position, 1.0);
     vec4 posEye = cam._view * position;
     if (emissiveAmount > 0.0) {

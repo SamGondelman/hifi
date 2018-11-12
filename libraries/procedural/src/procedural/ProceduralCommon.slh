@@ -65,20 +65,6 @@ struct ProceduralVertexData {
     vec2 texCoord0;
 };
 
-// Unimplemented uniforms
-// Resolution doesn't make sense in the VR context
-const vec3 iResolution = vec3(1.0);
-// Mouse functions not enabled currently
-const vec4 iMouse = vec4(0.0);
-// No support for audio input
-const float iSampleRate = 1.0;
-// No support for video input
-const vec4 iChannelTime = vec4(0.0);
-
-//PROCEDURAL_VERSION
-
-#ifdef PROCEDURAL_V3
-
 struct ProceduralFragmentData {
     vec3 position;
     vec3 normal;
@@ -92,7 +78,17 @@ struct ProceduralFragmentData {
     float scattering;
 };
 
-#endif
+// Unimplemented uniforms
+// Resolution doesn't make sense in the VR context
+const vec3 iResolution = vec3(1.0);
+// Mouse functions not enabled currently
+const vec4 iMouse = vec4(0.0);
+// No support for audio input
+const float iSampleRate = 1.0;
+// No support for video input
+const vec4 iChannelTime = vec4(0.0);
+
+//PROCEDURAL_VERSION
 
 // hack comment for extra whitespace 
 

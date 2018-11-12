@@ -33,7 +33,11 @@ layout(location=RENDER_UTILS_ATTR_POSITION_ES) out vec4 _positionES;
 <@include procedural/ProceduralCommon.slh@>
 
 #line 1001
-//PROCEDURAL_BLOCK
+//PROCEDURAL_BLOCK_BEGIN
+
+void getProceduralVertex(inout ProceduralVertexData proceduralData) {}
+
+//PROCEDURAL_BLOCK_END
 
 #line 2030
 void main(void) {
