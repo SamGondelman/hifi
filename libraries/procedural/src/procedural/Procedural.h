@@ -35,7 +35,6 @@ const size_t MAX_PROCEDURAL_TEXTURE_CHANNELS{ 4 };
  * The data used to define a Procedural shader material.
  * @typedef {object} ProceduralData
  * @property {number} version=1 - The version of the procedural shader.
- * @property {string} vertexShaderUrl - A link to a vertex shader.  Currently, only GLSL shaders are supported.  Optional.
  * @property {string} fragmentShaderUrl - A link to a fragment shader.  Currently, only GLSL shaders are supported.  The shader must implement a different method depending on the version.
  *     <code>shaderUrl</code> is an alias.
  * @property {string[]} channels=[] - An array of input texture URLs.  Currently, up to 4 are supported.

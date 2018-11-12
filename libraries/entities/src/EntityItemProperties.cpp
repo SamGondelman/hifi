@@ -1858,6 +1858,7 @@ void EntityItemProperties::merge(const EntityItemProperties& other) {
     COPY_PROPERTY_IF_CHANGED(spinStart);
     COPY_PROPERTY_IF_CHANGED(spinFinish);
     COPY_PROPERTY_IF_CHANGED(rotateWithEntity);
+    COPY_PROPERTY_IF_CHANGED(proceduralData);
 
     // Certifiable Properties
     COPY_PROPERTY_IF_CHANGED(itemName);

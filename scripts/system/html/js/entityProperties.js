@@ -1237,7 +1237,7 @@ const GROUPS = [
     },
     {
         id: "procedural",
-        addToGroup: "base",
+        addToGroup: "behavior",
         properties: [
             {
                 label: "Procedural Data",

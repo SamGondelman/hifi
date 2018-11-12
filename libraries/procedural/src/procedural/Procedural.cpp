@@ -210,6 +210,7 @@ void Procedural::setProceduralData(const ProceduralData& proceduralData) {
         }
     }
 
+    /* Procedural vertex shaders are disabled for now.  Add to JSDoc when enabled
     if (proceduralData.vertexShaderUrl != _data.vertexShaderUrl) {
         _data.vertexShaderUrl = proceduralData.vertexShaderUrl;
         _shaderDirty = true;
@@ -234,6 +235,7 @@ void Procedural::setProceduralData(const ProceduralData& proceduralData) {
             _networkVertexShader = ShaderCache::instance().getShader(shaderUrl);
         }
     }
+    */
 
     _enabled = true;
 }
