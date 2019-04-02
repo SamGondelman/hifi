@@ -66,9 +66,6 @@ public:
 
     void setExtra(void* extra) override;
 
-signals:
-    void networkTextureCreated(const QWeakPointer<NetworkTexture>& self);
-
 public slots:
     void ktxInitialDataRequestFinished();
     void ktxMipRequestFinished();
@@ -114,6 +111,7 @@ private:
         WAITING_FOR_MIP_REQUEST, // Waiting for the gpu layer to report that it needs higher resolution mips
         PENDING_MIP_REQUEST,     // We have added ourselves to the ResourceCache queue
         REQUESTING_MIP,          // We have a mip in flight
+        FINISHED_LOADING_MIPS,   // We successfully loaded all of our mips
         FAILED_TO_LOAD
     };
 
@@ -157,11 +155,6 @@ class TextureCache : public ResourceCache, public Dependency {
     SINGLETON_DEPENDENCY
 
 public:
-
-    /// Returns the ID of the permutation/normal texture used for Perlin noise shader programs.  This texture
-    /// has two lines: the first, a set of random numbers in [0, 255] to be used as permutation offsets, and
-    /// the second, a set of random unit vectors to be used as noise gradients.
-    const gpu::TexturePointer& getPermutationNormalTexture();
 
     /// Returns an opaque white texture (useful for a default).
     const gpu::TexturePointer& getWhiteTexture();
@@ -229,7 +222,6 @@ private:
     std::unordered_map<std::string, std::weak_ptr<gpu::Texture>> _texturesByHashes;
     std::mutex _texturesByHashesMutex;
 
-    gpu::TexturePointer _permutationNormalTexture;
     gpu::TexturePointer _whiteTexture;
     gpu::TexturePointer _grayTexture;
     gpu::TexturePointer _blueTexture;
