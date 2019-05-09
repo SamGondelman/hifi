@@ -706,7 +706,6 @@ void EntityTreeElement::cleanupDomainAndNonOwnedEntities() {
         EntityItems savedEntities;
         foreach(EntityItemPointer entity, _entityItems) {
             if (!(entity->isLocalEntity() || (entity->isAvatarEntity() && entity->getOwningAvatarID() == getTree()->getMyAvatarSessionUUID()))) {
-                entity->preDelete();
                 entity->_element = NULL;
             } else {
                 savedEntities.push_back(entity);
@@ -721,7 +720,6 @@ void EntityTreeElement::cleanupDomainAndNonOwnedEntities() {
 void EntityTreeElement::cleanupEntities() {
     withWriteLock([&] {
         foreach(EntityItemPointer entity, _entityItems) {
-            entity->preDelete();
             // NOTE: only EntityTreeElement should ever be changing the value of entity->_element
             // NOTE: We explicitly don't delete the EntityItem here because since we only
             // access it by smart pointers, when we remove it from the _entityItems
@@ -733,10 +731,7 @@ void EntityTreeElement::cleanupEntities() {
     bumpChangedContent();
 }
 
-bool EntityTreeElement::removeEntityItem(EntityItemPointer entity, bool deletion) {
-    if (deletion) {
-        entity->preDelete();
-    }
+bool EntityTreeElement::removeEntityItem(EntityItemPointer entity) {
     int numEntries = 0;
     withWriteLock([&] {
         numEntries = _entityItems.removeAll(entity);

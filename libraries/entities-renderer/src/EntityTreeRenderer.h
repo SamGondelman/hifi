@@ -257,7 +257,7 @@ private:
 
     std::unordered_map<EntityItemID, EntityRendererPointer> _renderablesToUpdate;
     std::unordered_map<EntityItemID, EntityRendererPointer> _entitiesInScene;
-    std::unordered_map<EntityItemID, EntityItemWeakPointer> _entitiesToAdd;
+    std::unordered_map<EntityItemID, EntityItemPointer> _entitiesToAdd;
 
     // For Scene.shouldRenderEntities
     QList<EntityItemID> _entityIDsLastInScene;

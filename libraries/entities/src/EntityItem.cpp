@@ -3262,9 +3262,6 @@ void EntityItem::setSpaceIndex(int32_t index) {
     _spaceIndex = index;
 }
 
-void EntityItem::preDelete() {
-}
-
 bool EntityItem::getCloneable() const {
     bool result;
     withReadLock([&] {

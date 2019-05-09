@@ -88,6 +88,7 @@ void EntityTree::eraseDomainAndNonOwnedEntities() {
         _simulation->clearEntities();
     }
 
+    QSet<EntityItemID> entitiesToDelete;
     this->withWriteLock([&] {
         QHash<EntityItemID, EntityItemPointer> savedEntities;
         // NOTE: lock the Tree first, then lock the _entityMap.
@@ -102,6 +103,7 @@ void EntityTree::eraseDomainAndNonOwnedEntities() {
             if (entity->isLocalEntity() || (entity->isAvatarEntity() && entity->getOwningAvatarID() == getMyAvatarSessionUUID())) {
                 savedEntities[entity->getEntityItemID()] = entity;
             } else {
+                entitiesToDelete.insert(entity->getID());
                 int32_t spaceIndex = entity->getSpaceIndex();
                 if (spaceIndex != -1) {
                     // stale spaceIndices will be freed later
@@ -111,22 +113,23 @@ void EntityTree::eraseDomainAndNonOwnedEntities() {
         }
         _entityMap.swap(savedEntities);
     });
+    deleteEntities(entitiesToDelete, true, true);
 
     resetClientEditStats();
     clearDeletedEntities();
 
     {
         QWriteLocker locker(&_needsParentFixupLock);
-        QVector<EntityItemWeakPointer> needParentFixup;
 
-        foreach (EntityItemWeakPointer entityItem, _needsParentFixup) {
-            auto entity = entityItem.lock();
-            if (entity && (entity->isLocalEntity() || (entity->isAvatarEntity() && entity->getOwningAvatarID() == getMyAvatarSessionUUID()))) {
-                needParentFixup.push_back(entityItem);
+        auto it = _needsParentFixup.begin();
+        while (it != _needsParentFixup.end()) {
+            auto entity = it->lock();
+            if (!entity || !(entity->isLocalEntity() || (entity->isAvatarEntity() && entity->getOwningAvatarID() == getMyAvatarSessionUUID()))) {
+                it = _needsParentFixup.erase(it);
+            } else {
+                it++;
             }
         }
-
-        _needsParentFixup = needParentFixup;
     }
 }
 
@@ -2084,8 +2087,7 @@ void EntityTree::fixupNeedsParentFixups() {
     QVector<EntityItemWeakPointer> entitiesToFixup;
     {
         QWriteLocker locker(&_needsParentFixupLock);
-        entitiesToFixup = _needsParentFixup;
-        _needsParentFixup.clear();
+        entitiesToFixup.swap(_needsParentFixup);
     }
 
     QMutableVectorIterator<EntityItemWeakPointer> iter(entitiesToFixup);
@@ -2140,8 +2142,6 @@ void EntityTree::fixupNeedsParentFixups() {
             if (success && parent) {
                 parent->updateQueryAACube();
             }
-
-            entity->postParentFixup();
         } else if (getIsServer() || _avatarIDs.contains(entity->getParentID())) {
             // this is a child of an avatar, which the entity server will never have
             // a SpatiallyNestable object for.  Add it to a list for cleanup when the avatar leaves.
@@ -2416,6 +2416,9 @@ void EntityTree::addEntityMapEntry(EntityItemPointer entity) {
 
 void EntityTree::clearEntityMapEntry(const EntityItemID& id) {
     QWriteLocker locker(&_entityMapLock);
+    if (id == "{d0b68015-2448-4894-bd02-e19ea4b48cff}") {
+        qDebug() << "boop clearEntityMapEntry";
+    }
     _entityMap.remove(id);
 }
 

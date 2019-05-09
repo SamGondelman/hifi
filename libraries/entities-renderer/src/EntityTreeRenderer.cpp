@@ -315,23 +315,17 @@ void EntityTreeRenderer::shutdown() {
 void EntityTreeRenderer::addPendingEntities(const render::ScenePointer& scene, render::Transaction& transaction) {
     PROFILE_RANGE_EX(simulation_physics, "AddToScene", 0xffff00ff, (uint64_t)_entitiesToAdd.size());
     PerformanceTimer pt("add");
-    // Clear any expired entities
-    // FIXME should be able to use std::remove_if, but it fails due to some
-    // weird compilation error related to EntityItemID assignment operators
-    for (auto itr = _entitiesToAdd.begin(); _entitiesToAdd.end() != itr; ) {
-        if (itr->second.expired()) {
-            _entitiesToAdd.erase(itr++);
-        } else {
-            ++itr;
-        }
-    }
 
     if (!_entitiesToAdd.empty()) {
         std::unordered_set<EntityItemID> processedIds;
         for (const auto& entry : _entitiesToAdd) {
-            auto entity = entry.second.lock();
+            auto entity = entry.second;
             if (!entity) {
                 continue;
+            }
+
+            if (entity->getEntityItemID() == "{d0b68015-2448-4894-bd02-e19ea4b48cff}") {
+                qDebug() << "boop addPendingEntities2" << entity->isParentPathComplete();
             }
 
             // Path to the parent transforms is not valid,
@@ -983,16 +977,47 @@ void EntityTreeRenderer::mouseMoveEvent(QMouseEvent* event) {
 void EntityTreeRenderer::deletingEntity(const EntityItemID& entityID) {
     // If it's in a pending queue, remove it
     _renderablesToUpdate.erase(entityID);
+
+    if (entityID == "{d0b68015-2448-4894-bd02-e19ea4b48cff}") {
+        qDebug() << "boop deletingEntity";
+    }
+
+    EntityItemPointer entity;
+    EntityRendererPointer renderable;
+    {
+        auto itr = _entitiesInScene.find(entityID);
+        if (entityID == "{d0b68015-2448-4894-bd02-e19ea4b48cff}") {
+            qDebug() << "boop deletingEntity2" << (_entitiesInScene.end() == itr);
+        }
+        if (_entitiesInScene.end() == itr) {
+            qCWarning(entitiesrenderer) << "EntityTreeRenderer::deletingEntity(), didn't find entity in scene, looking in pending entities";
+            auto pendingItr = _entitiesToAdd.find(entityID);
+            if (entityID == "{d0b68015-2448-4894-bd02-e19ea4b48cff}") {
+                qDebug() << "boop deletingEntity2" << (pendingItr != _entitiesToAdd.end());
+            }
+            if (pendingItr != _entitiesToAdd.end()) {
+                entity = pendingItr->second;
+            }
+        } else {
+            renderable = itr->second;
+            entity = itr->second->getEntity();
+            _entitiesInScene.erase(itr);
+        }
+    }
+
     _entitiesToAdd.erase(entityID);
 
-    auto itr = _entitiesInScene.find(entityID);
-    if (_entitiesInScene.end() == itr) {
-        // Not in the scene, and no longer potentially in the pending queue, we're done
+    if (entityID == "{d0b68015-2448-4894-bd02-e19ea4b48cff}") {
+        qDebug() << "boop deletingEntity2" << (bool)entity << (bool)renderable;
+    }
+
+    if (!entity) {
+        qCWarning(entitiesrenderer) << "EntityTreeRenderer::deletingEntity(), couldn't find the entity to delete";
         return;
     }
 
-    if (_tree && !_shuttingDown && _entitiesScriptEngine && !itr->second->getEntity()->getScript().isEmpty()) {
-        if (itr->second->getEntity()->contains(_avatarPosition)) {
+    if (_tree && !_shuttingDown && _entitiesScriptEngine && !entity->getScript().isEmpty()) {
+        if (entity->contains(_avatarPosition)) {
             _entitiesScriptEngine->callEntityScriptMethod(entityID, "leaveEntity");
         }
         _entitiesScriptEngine->unloadEntityScript(entityID, true);
@@ -1003,9 +1028,6 @@ void EntityTreeRenderer::deletingEntity(const EntityItemID& entityID) {
         qCWarning(entitiesrenderer) << "EntityTreeRenderer::deletingEntity(), Unexpected null scene, possibly during application shutdown";
         return;
     }
-
-    auto renderable = itr->second;
-    _entitiesInScene.erase(itr);
 
     if (!renderable) {
         qCWarning(entitiesrenderer) << "EntityTreeRenderer::deletingEntity(), trying to remove non-renderable entity";

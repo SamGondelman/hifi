@@ -93,7 +93,7 @@ bool DeleteEntityOperator::preRecursion(const OctreeElementPointer& element) {
             // and we can stop searching.
             if (entityTreeElement == details.containingElement) {
                 EntityItemPointer theEntity = details.entity;
-                bool entityDeleted = entityTreeElement->removeEntityItem(theEntity, true); // remove it from the element
+                bool entityDeleted = entityTreeElement->removeEntityItem(theEntity); // remove it from the element
                 assert(entityDeleted);
                 (void)entityDeleted; // quiet warning about unused variable
                 _tree->clearEntityMapEntry(details.entity->getEntityItemID());

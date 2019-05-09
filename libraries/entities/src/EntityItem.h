@@ -537,9 +537,6 @@ public:
     void setSpaceIndex(int32_t index);
     int32_t getSpaceIndex() const { return _spaceIndex; }
 
-    virtual void preDelete();
-    virtual void postParentFixup() {}
-
     void setSimulationOwnershipExpiry(uint64_t expiry) { _simulationOwnershipExpiry = expiry; }
     uint64_t getSimulationOwnershipExpiry() const { return _simulationOwnershipExpiry; }
 

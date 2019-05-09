@@ -192,7 +192,7 @@ public:
 
     void cleanupDomainAndNonOwnedEntities();
     void cleanupEntities(); /// called by EntityTree on cleanup this will free all entities
-    bool removeEntityItem(EntityItemPointer entity, bool deletion = false);
+    bool removeEntityItem(EntityItemPointer entity);
 
     bool containsEntityBounds(EntityItemPointer entity) const;
     bool bestFitEntityBounds(EntityItemPointer entity) const;
